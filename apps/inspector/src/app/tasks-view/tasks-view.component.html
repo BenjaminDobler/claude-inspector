@@ -1,0 +1,46 @@
+<div class="tasks-container">
+  @if (tasks().length > 0) {
+    <div class="tasks-summary">
+      <span class="summary-item">{{ tasks().filter(t => t.status === 'completed').length }}/{{ tasks().length }} completed</span>
+    </div>
+
+    @for (task of tasks(); track task.id) {
+      <div class="task-card" [attr.data-status]="task.status" (click)="toggleExpand(task.id)">
+        <div class="task-header">
+          <span class="task-status" [style.color]="getStatusColor(task.status)">
+            @switch (task.status) {
+              @case ('completed') { &#10003; }
+              @case ('in_progress') { &#9654; }
+              @default { &#9675; }
+            }
+          </span>
+          <span class="task-id">#{{ task.id }}</span>
+          <span class="task-subject">{{ task.subject }}</span>
+          <span class="task-status-label" [attr.data-status]="task.status">{{ task.status }}</span>
+        </div>
+
+        @if (expandedId() === task.id) {
+          <div class="task-detail">
+            @if (task.description) {
+              <div class="task-description">{{ task.description }}</div>
+            }
+            @if (task.blockedBy.length > 0) {
+              <div class="task-deps">
+                <span class="dep-label">Blocked by:</span>
+                <span class="dep-value">{{ getBlockerNames(task.blockedBy) }}</span>
+              </div>
+            }
+            @if (task.blocks.length > 0) {
+              <div class="task-deps">
+                <span class="dep-label">Blocks:</span>
+                <span class="dep-value">{{ getBlockerNames(task.blocks) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <div class="empty">No tasks were created in this session</div>
+  }
+</div>

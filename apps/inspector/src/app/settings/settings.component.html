@@ -1,0 +1,69 @@
+<div class="settings-container">
+  <div class="settings-header">
+    <h2>Notification Settings</h2>
+    <p class="settings-desc">Configure sounds and notifications for live session monitoring events.</p>
+  </div>
+
+  <!-- System notification permission -->
+  <div class="permission-bar">
+    @if (permission() === 'granted') {
+      <span class="perm-status granted">System notifications: enabled</span>
+    } @else if (permission() === 'denied') {
+      <span class="perm-status denied">System notifications: blocked (enable in browser/OS settings)</span>
+    } @else {
+      <span class="perm-status default">System notifications: not enabled</span>
+      <button class="perm-btn" (click)="requestPermission()">Enable</button>
+    }
+  </div>
+
+  <!-- Rules -->
+  <div class="rules-list">
+    @for (rule of rules(); track rule.id) {
+      <div class="rule-card" [class.enabled]="rule.enabled">
+        <div class="rule-header">
+          <button class="toggle-btn" [class.on]="rule.enabled" (click)="toggleEnabled(rule)">
+            {{ rule.enabled ? 'ON' : 'OFF' }}
+          </button>
+          <div class="rule-info">
+            <span class="rule-label">{{ rule.label }}</span>
+            <span class="rule-desc">{{ rule.description }}</span>
+          </div>
+        </div>
+
+        @if (rule.enabled) {
+          <div class="rule-options">
+            <div class="option-row">
+              <label class="option-label">
+                <button class="checkbox" [class.checked]="rule.sound" (click)="toggleSound(rule)">
+                  {{ rule.sound ? 'x' : '' }}
+                </button>
+                Play sound
+              </label>
+
+              @if (rule.sound) {
+                <select class="sound-select" [value]="rule.soundFile" (change)="setSoundFile(rule, $event)">
+                  @for (opt of soundOptions; track opt.value) {
+                    <option [value]="opt.value" [selected]="opt.value === rule.soundFile">{{ opt.label }}</option>
+                  }
+                </select>
+                <button class="test-btn" (click)="testSound(rule.soundFile)">Test</button>
+              }
+            </div>
+
+            <div class="option-row">
+              <label class="option-label">
+                <button class="checkbox" [class.checked]="rule.systemNotification" (click)="toggleSystemNotification(rule)">
+                  {{ rule.systemNotification ? 'x' : '' }}
+                </button>
+                System notification
+              </label>
+              @if (rule.systemNotification && permission() !== 'granted') {
+                <span class="warning">Requires permission</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

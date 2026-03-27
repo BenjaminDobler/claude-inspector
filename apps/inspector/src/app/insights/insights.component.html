@@ -1,0 +1,146 @@
+<div class="insights-container">
+  <!-- Section tabs -->
+  <div class="section-tabs">
+    <button class="section-tab" [class.active]="activeSection() === 'decisions'" (click)="activeSection.set('decisions')">
+      Decision Flow <span class="badge">{{ decisions().length }}</span>
+    </button>
+    <button class="section-tab" [class.active]="activeSection() === 'skills'" (click)="activeSection.set('skills')">
+      Skills <span class="badge">{{ skills().length }}</span>
+    </button>
+    <button class="section-tab" [class.active]="activeSection() === 'agents'" (click)="activeSection.set('agents')">
+      Agents <span class="badge">{{ agents().length }}</span>
+    </button>
+    <button class="section-tab" [class.active]="activeSection() === 'thinking'" (click)="activeSection.set('thinking')">
+      Thinking <span class="badge">{{ thinkingBlocks().length }}</span>
+    </button>
+    <button class="section-tab" [class.active]="activeSection() === 'errors'" (click)="activeSection.set('errors')">
+      Errors <span class="badge error-badge">{{ errors().length }}</span>
+    </button>
+  </div>
+
+  <div class="section-content">
+    <!-- Decision Flow -->
+    @if (activeSection() === 'decisions') {
+      <div class="decision-flow">
+        @for (d of decisions(); track d.uuid + d.type + d.timestamp) {
+          <div class="decision-item" [attr.data-decision]="d.type" (click)="toggleExpand(d.uuid + d.type)">
+            <div class="decision-header">
+              <span class="decision-icon" [attr.data-decision]="d.type">
+                @switch (d.type) {
+                  @case ('thinking') { T }
+                  @case ('skill') { S }
+                  @case ('agent') { A }
+                  @case ('plan') { P }
+                  @case ('ask_user') { ? }
+                  @case ('tool_search') { Q }
+                  @case ('error') { ! }
+                }
+              </span>
+              <span class="decision-label">{{ d.label }}</span>
+              <span class="decision-time">{{ formatTime(d.timestamp) }}</span>
+            </div>
+            @if (expandedUuid() === d.uuid + d.type) {
+              <div class="decision-detail">{{ d.detail }}</div>
+            } @else {
+              <div class="decision-preview">{{ d.detail | slice:0:100 }}{{ d.detail.length > 100 ? '...' : '' }}</div>
+            }
+          </div>
+        }
+        @if (decisions().length === 0) {
+          <div class="empty">No decision events found in this session</div>
+        }
+      </div>
+    }
+
+    <!-- Skills -->
+    @if (activeSection() === 'skills') {
+      <div class="skills-list">
+        @for (s of skills(); track s.uuid) {
+          <div class="skill-card" (click)="toggleExpand(s.uuid)">
+            <div class="skill-header">
+              <span class="skill-name">{{ s.skillName }}</span>
+              <span class="skill-time">{{ formatTime(s.timestamp) }}</span>
+            </div>
+            @if (s.args) {
+              <div class="skill-args" [class.expanded]="expandedUuid() === s.uuid">{{ s.args }}</div>
+            }
+          </div>
+        }
+        @if (skills().length === 0) {
+          <div class="empty">No skills were used in this session</div>
+        }
+      </div>
+    }
+
+    <!-- Agents -->
+    @if (activeSection() === 'agents') {
+      <div class="agents-list">
+        @for (a of agents(); track a.uuid) {
+          <div class="agent-card" (click)="toggleExpand(a.uuid)">
+            <div class="agent-header">
+              <span class="agent-type">{{ a.agentType || 'general-purpose' }}</span>
+              @if (a.description) {
+                <span class="agent-desc">{{ a.description }}</span>
+              }
+              <span class="agent-time">{{ formatTime(a.timestamp) }}</span>
+            </div>
+            @if (expandedUuid() === a.uuid && a.prompt) {
+              <div class="agent-prompt">{{ a.prompt }}</div>
+            } @else if (a.prompt) {
+              <div class="agent-prompt-preview">{{ a.prompt | slice:0:150 }}...</div>
+            }
+          </div>
+        }
+        @if (agents().length === 0) {
+          <div class="empty">No agents were spawned in this session</div>
+        }
+      </div>
+    }
+
+    <!-- Thinking -->
+    @if (activeSection() === 'thinking') {
+      <div class="thinking-list">
+        @for (t of thinkingBlocks(); track t.uuid) {
+          <div class="thinking-card" (click)="toggleExpand(t.uuid)">
+            <div class="thinking-header">
+              <span class="thinking-time">{{ formatTime(t.timestamp) }}</span>
+              @if (t.precedingContext) {
+                <span class="thinking-context">after: "{{ t.precedingContext | slice:0:80 }}"</span>
+              }
+            </div>
+            @if (expandedUuid() === t.uuid) {
+              <div class="thinking-content expanded">{{ t.thinking }}</div>
+            } @else {
+              <div class="thinking-content">{{ t.thinking | slice:0:200 }}{{ t.thinking.length > 200 ? '...' : '' }}</div>
+            }
+          </div>
+        }
+        @if (thinkingBlocks().length === 0) {
+          <div class="empty">No thinking blocks found (only present with extended thinking models)</div>
+        }
+      </div>
+    }
+
+    <!-- Errors -->
+    @if (activeSection() === 'errors') {
+      <div class="errors-list">
+        @for (e of errors(); track e.uuid) {
+          <div class="error-card" (click)="toggleExpand(e.uuid)">
+            <div class="error-header">
+              <span class="error-tool">{{ e.toolName }}</span>
+              <span class="error-time">{{ formatTime(e.timestamp) }}</span>
+            </div>
+            @if (expandedUuid() === e.uuid) {
+              <div class="error-content expanded">{{ e.error }}</div>
+            } @else {
+              <div class="error-content">{{ e.error | slice:0:150 }}{{ e.error.length > 150 ? '...' : '' }}</div>
+            }
+          </div>
+        }
+        @if (errors().length === 0) {
+          <div class="empty">No tool errors in this session</div>
+        }
+      </div>
+    }
+  </div>
+</div>

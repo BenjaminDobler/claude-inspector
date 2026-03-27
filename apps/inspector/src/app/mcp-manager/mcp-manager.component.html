@@ -1,0 +1,165 @@
+<div class="mcp-container">
+  <div class="mcp-header">
+    <h2>MCP Servers</h2>
+    <button class="add-btn" (click)="showAddForm.set(!showAddForm())">
+      {{ showAddForm() ? 'Cancel' : '+ Add Server' }}
+    </button>
+  </div>
+
+  <!-- Add form -->
+  @if (showAddForm()) {
+    <div class="add-form">
+      <div class="form-row">
+        <label>Name</label>
+        <input type="text" placeholder="my-server" [ngModel]="addName()" (ngModelChange)="addName.set($event)" />
+      </div>
+
+      <div class="form-row">
+        <label>Transport</label>
+        <div class="transport-toggle">
+          <button [class.active]="addTransport() === 'stdio'" (click)="addTransport.set('stdio')">Stdio (local process)</button>
+          <button [class.active]="addTransport() === 'http'" (click)="addTransport.set('http')">HTTP / SSE</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>{{ addTransport() === 'stdio' ? 'Command' : 'URL' }}</label>
+        <input type="text"
+          [placeholder]="addTransport() === 'stdio' ? 'npx -y @modelcontextprotocol/server-filesystem' : 'https://api.example.com/mcp'"
+          [ngModel]="addCommandOrUrl()" (ngModelChange)="addCommandOrUrl.set($event)" />
+      </div>
+
+      @if (addTransport() === 'stdio') {
+        <div class="form-row">
+          <label>Arguments (space-separated)</label>
+          <input type="text" placeholder="/path/to/serve" [ngModel]="addArgs()" (ngModelChange)="addArgs.set($event)" />
+        </div>
+      }
+
+      <div class="form-row">
+        <label>Environment Variables</label>
+        <div class="env-list">
+          @for (pair of addEnvPairs(); track $index) {
+            <div class="env-pair">
+              <input type="text" placeholder="KEY" [ngModel]="pair.key" (ngModelChange)="pair.key = $event" />
+              <input type="text" placeholder="value" [ngModel]="pair.value" (ngModelChange)="pair.value = $event" />
+              <button class="env-remove" (click)="removeEnvPair($index)">x</button>
+            </div>
+          }
+          <button class="env-add" (click)="addEnvPair()">+ Add variable</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Scope</label>
+        <div class="transport-toggle">
+          <button [class.active]="addScope() === 'user'" (click)="addScope.set('user')">User (global)</button>
+          <button [class.active]="addScope() === 'project'" (click)="addScope.set('project')">Project</button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="submit-btn" (click)="addServer()" [disabled]="adding() || !addName() || !addCommandOrUrl()">
+          {{ adding() ? 'Adding...' : 'Add Server' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Server list -->
+  @if (!loading()) {
+    <div class="servers-list">
+      @for (server of servers(); track server.name) {
+        <div class="server-card" [attr.data-source]="getSourceType(server.source)">
+          <div class="server-header" (click)="toggleExpand(server.name)">
+            <div class="server-info">
+              <span class="server-type-badge">{{ getTypeIcon(server.serverType) }}</span>
+              <span class="server-name">{{ server.name }}</span>
+              <span class="server-source" [attr.data-source]="getSourceType(server.source)">{{ getSourceLabel(server.source) }}</span>
+            </div>
+            <div class="server-actions">
+              @if (getSourceType(server.source) === 'user') {
+                @if (removing() === server.name) {
+                  <span class="removing">Removing...</span>
+                } @else {
+                  <button class="remove-btn" (click)="removeServer(server); $event.stopPropagation()">Remove</button>
+                }
+              }
+            </div>
+          </div>
+
+          <div class="server-summary">
+            @if (server.command) {
+              <span class="server-cmd">{{ server.command }} {{ server.args.join(' ') }}</span>
+            }
+            @if (server.url) {
+              <span class="server-url">{{ server.url }}</span>
+            }
+          </div>
+
+          @if (expandedServer() === server.name) {
+            <div class="server-detail">
+              @if (server.command) {
+                <div class="detail-row">
+                  <span class="detail-label">Command</span>
+                  <code class="detail-value">{{ server.command }}</code>
+                </div>
+              }
+              @if (server.args.length > 0) {
+                <div class="detail-row">
+                  <span class="detail-label">Arguments</span>
+                  <code class="detail-value">{{ server.args.join(' ') }}</code>
+                </div>
+              }
+              @if (server.url) {
+                <div class="detail-row">
+                  <span class="detail-label">URL</span>
+                  <code class="detail-value url">{{ server.url }}</code>
+                </div>
+              }
+              @if (objectKeys(server.env).length > 0) {
+                <div class="detail-row">
+                  <span class="detail-label">Environment</span>
+                  <div class="env-display">
+                    @for (key of objectKeys(server.env); track key) {
+                      <div class="env-item">
+                        <span class="env-key">{{ key }}</span>
+                        <span class="env-val">{{ server.env[key].length > 20 ? server.env[key].slice(0, 20) + '...' : server.env[key] }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (objectKeys(server.headers).length > 0) {
+                <div class="detail-row">
+                  <span class="detail-label">Headers</span>
+                  <div class="env-display">
+                    @for (key of objectKeys(server.headers); track key) {
+                      <div class="env-item">
+                        <span class="env-key">{{ key }}</span>
+                        <span class="env-val">{{ server.headers[key].length > 30 ? server.headers[key].slice(0, 30) + '...' : server.headers[key] }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (servers().length === 0) {
+        <div class="empty">No MCP servers configured</div>
+      }
+    </div>
+  } @else {
+    <div class="loading">Loading MCP servers...</div>
+  }
+
+  @if (success()) {
+    <div class="toast success">{{ success() }}</div>
+  }
+  @if (error()) {
+    <div class="toast error" (click)="error.set(null)">{{ error() }}</div>
+  }
+</div>

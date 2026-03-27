@@ -1,0 +1,65 @@
+.cost-container { padding: 28px; height: 100%; overflow-y: auto; }
+.cost-header { margin-bottom: 20px; h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; } }
+
+.cost-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cost-card {
+  padding: 18px 20px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &.highlight {
+    border-color: var(--border-accent);
+    box-shadow: var(--glow-blue);
+  }
+}
+
+.cost-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; }
+.cost-amount { font-size: 24px; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); letter-spacing: -0.02em; }
+
+.daily-table {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.table-header, .table-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr 1fr 1fr 100px;
+  padding: 10px 18px;
+  gap: 8px;
+  align-items: center;
+}
+
+.table-header {
+  background: var(--bg-overlay);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.table-row {
+  border-top: 1px solid var(--border-muted);
+  font-size: 13px;
+  transition: background 0.1s;
+  &:hover { background: rgba(255,255,255,0.02); }
+}
+
+.col-date { font-family: var(--font-mono); font-weight: 500; color: var(--text-primary); }
+.col-tokens { font-family: var(--font-mono); color: var(--text-secondary); font-size: 12px; }
+.col-cost { font-family: var(--font-mono); font-weight: 600; color: var(--accent-green); text-align: right; &.expensive { color: var(--accent-yellow); } }
+.loading { padding: 40px; text-align: center; color: var(--text-muted); }

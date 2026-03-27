@@ -1,0 +1,371 @@
+<div class="config-container">
+  <div class="config-header">
+    <h2>Claude Code Configuration</h2>
+  </div>
+
+  <!-- Section tabs -->
+  <div class="config-tabs">
+    <button class="config-tab" [class.active]="activeSection() === 'plugins'" (click)="activeSection.set('plugins')">Installed Plugins</button>
+    <button class="config-tab" [class.active]="activeSection() === 'marketplace'" (click)="activeSection.set('marketplace')">Marketplace</button>
+    <button class="config-tab" [class.active]="activeSection() === 'permissions'" (click)="activeSection.set('permissions')">Permissions</button>
+    <button class="config-tab" [class.active]="activeSection() === 'raw'" (click)="activeSection.set('raw'); loadRawContent()">Raw Editor</button>
+  </div>
+
+  <div class="config-content">
+    <!-- Installed Plugins -->
+    @if (activeSection() === 'plugins') {
+      <div class="plugins-section">
+        <div class="plugins-toolbar">
+          <button class="update-all-btn" (click)="updateAllPlugins()" [disabled]="!!updating()">
+            {{ updating() ? 'Updating...' : 'Update All' }}
+          </button>
+        </div>
+
+        @for (plugin of allPlugins(); track plugin.name + plugin.marketplace) {
+          @if (plugin.installed) {
+            <div class="plugin-card installed">
+              <div class="plugin-header">
+                <div class="plugin-info">
+                  <span class="plugin-name">{{ plugin.name }}</span>
+                  <span class="plugin-marketplace">{{ plugin.marketplace }}</span>
+                </div>
+                <div class="plugin-actions">
+                  @if (updating() === plugin.name + '@' + plugin.marketplace) {
+                    <span class="updating-badge">Updating...</span>
+                  } @else {
+                    <button class="update-btn" (click)="updatePlugin(plugin)">Update</button>
+                  }
+                  @if (enabledPlugins()[plugin.name + '@' + plugin.marketplace]) {
+                    <button class="plugin-toggle on" (click)="togglePlugin(plugin.name + '@' + plugin.marketplace, false)">Enabled</button>
+                  } @else {
+                    <button class="plugin-toggle" (click)="togglePlugin(plugin.name + '@' + plugin.marketplace, true)">Disabled</button>
+                  }
+                  <button class="detail-btn" (click)="viewPlugin(plugin)">Details</button>
+                </div>
+              </div>
+              <div class="plugin-desc">{{ plugin.description }}</div>
+              <div class="plugin-meta">
+                @if (plugin.category) {
+                  <span class="plugin-category">{{ plugin.category }}</span>
+                }
+                @if (plugin.installedVersion) {
+                  <span class="plugin-version">v{{ plugin.installedVersion }}</span>
+                }
+                @if (plugin.lastUpdated) {
+                  <span class="plugin-updated" [class.stale]="plugin.daysSinceUpdate !== undefined && plugin.daysSinceUpdate > 7">
+                    Updated {{ plugin.daysSinceUpdate === 0 ? 'today' : plugin.daysSinceUpdate === 1 ? 'yesterday' : plugin.daysSinceUpdate + 'd ago' }}
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        }
+        @if (allPlugins().filter(p => p.installed).length === 0) {
+          <div class="empty">No plugins installed. Browse the marketplace to install plugins.</div>
+        }
+      </div>
+    }
+
+    <!-- Marketplace -->
+    @if (activeSection() === 'marketplace') {
+      <div class="marketplace-section">
+        <!-- Marketplace sources -->
+        <div class="marketplace-sources">
+          <div class="sources-header">
+            <h4>Marketplace Sources</h4>
+            <button class="refresh-btn" (click)="refreshMarketplaces()" [disabled]="marketplaceLoading()">
+              {{ marketplaceLoading() ? 'Refreshing...' : 'Refresh All' }}
+            </button>
+          </div>
+          <div class="sources-list">
+            @for (mkt of marketplaces(); track mkt.name) {
+              <div class="source-item">
+                <span class="source-name">{{ mkt.name }}</span>
+                <span class="source-desc">{{ mkt.catalog?.description || '' }}</span>
+                <span class="source-count">{{ mkt.catalog?.plugins?.length || 0 }} plugins</span>
+                @if (mkt.name !== 'claude-plugins-official') {
+                  <button class="source-remove" (click)="removeMarketplace(mkt.name)">Remove</button>
+                }
+              </div>
+            }
+          </div>
+          <div class="source-add">
+            <input
+              type="text"
+              class="source-input"
+              placeholder="GitHub repo, URL, or path (e.g. owner/repo)"
+              [ngModel]="newMarketplaceSource()"
+              (ngModelChange)="newMarketplaceSource.set($event)"
+              (keydown.enter)="addMarketplace()"
+            />
+            <button class="source-add-btn" (click)="addMarketplace()" [disabled]="marketplaceLoading()">Add</button>
+          </div>
+        </div>
+
+        <!-- Search & filters -->
+        <div class="marketplace-filters">
+          <input
+            type="text"
+            class="marketplace-search"
+            placeholder="Search plugins..."
+            [ngModel]="marketplaceSearch()"
+            (ngModelChange)="marketplaceSearch.set($event)"
+          />
+          <div class="filter-row">
+            <select class="filter-select" [ngModel]="marketplaceCategory()" (ngModelChange)="marketplaceCategory.set($event)">
+              <option value="">All categories</option>
+              @for (cat of categories; track cat) {
+                <option [value]="cat">{{ cat }}</option>
+              }
+            </select>
+            <select class="filter-select" [ngModel]="marketplaceShowInstalled()" (ngModelChange)="marketplaceShowInstalled.set($event)">
+              <option value="all">All</option>
+              <option value="installed">Installed</option>
+              <option value="not-installed">Not installed</option>
+            </select>
+            <span class="result-count">{{ filteredPlugins.length }} plugins</span>
+          </div>
+        </div>
+
+        @for (plugin of filteredPlugins; track plugin.name + plugin.marketplace) {
+          <div class="plugin-card" [class.installed]="plugin.installed">
+            <div class="plugin-header">
+              <div class="plugin-info">
+                <span class="plugin-name">{{ plugin.name }}</span>
+                @if (plugin.installCount) {
+                  <span class="install-count">{{ formatCount(plugin.installCount) }} installs</span>
+                }
+              </div>
+              <div class="plugin-actions">
+                @if (installing() === plugin.name + '@' + plugin.marketplace) {
+                  <span class="installing-badge">Installing...</span>
+                } @else if (plugin.installed) {
+                  <button class="uninstall-btn" (click)="uninstallPlugin(plugin); $event.stopPropagation()">Uninstall</button>
+                } @else {
+                  <button class="install-btn" (click)="installPlugin(plugin); $event.stopPropagation()">Install</button>
+                }
+                <button class="detail-btn" (click)="viewPlugin(plugin)">Details</button>
+              </div>
+            </div>
+            <div class="plugin-desc">{{ plugin.description }}</div>
+            <div class="plugin-meta">
+              @if (plugin.category) {
+                <span class="plugin-category">{{ plugin.category }}</span>
+              }
+              @if (plugin.author?.name) {
+                <span class="plugin-author">by {{ plugin.author?.name }}</span>
+              }
+              <span class="plugin-marketplace">{{ plugin.marketplace }}</span>
+            </div>
+          </div>
+        }
+        @if (filteredPlugins.length === 0 && allPlugins().length > 0) {
+          <div class="empty">No plugins match your search</div>
+        }
+        @if (allPlugins().length === 0) {
+          <div class="empty">No marketplace catalogs found</div>
+        }
+      </div>
+
+    }
+
+    <!-- Permissions -->
+    @if (activeSection() === 'permissions') {
+      <div class="permissions-section">
+        <div class="project-selector">
+          <label>Project:</label>
+          <select [ngModel]="selectedProjectDir()" (ngModelChange)="selectedProjectDir.set($event); loadProjectConfig()">
+            <option value="">Select a project...</option>
+            @for (dir of projectDirs(); track dir) {
+              <option [value]="dir">{{ dir }}</option>
+            }
+          </select>
+        </div>
+
+        @if (projectConfig()) {
+          <div class="permissions-list">
+            <div class="permissions-header">
+              <h4>Allowed Permissions</h4>
+              <span class="perm-count">{{ projectPermissions().length }} rules</span>
+            </div>
+
+            @for (perm of projectPermissions(); track $index) {
+              <div class="perm-item">
+                <code class="perm-pattern">{{ perm }}</code>
+                <button class="perm-remove" (click)="removePermission($index)">Remove</button>
+              </div>
+            }
+
+            <div class="perm-add">
+              <input
+                type="text"
+                class="perm-input"
+                placeholder='e.g. Bash(npm test:*) or WebSearch'
+                [ngModel]="newPermission()"
+                (ngModelChange)="newPermission.set($event)"
+                (keydown.enter)="addPermission()"
+              />
+              <button class="perm-add-btn" (click)="addPermission()">Add</button>
+            </div>
+
+            <div class="perm-hints">
+              <span>Examples: <code>Bash(npm test:*)</code> <code>Bash(git commit:*)</code> <code>WebSearch</code> <code>Read(/tmp/**)</code></span>
+            </div>
+          </div>
+        } @else if (!selectedProjectDir()) {
+          <div class="empty">Select a project to manage permissions</div>
+        }
+      </div>
+    }
+
+    <!-- Raw Editor -->
+    @if (activeSection() === 'raw') {
+      <div class="raw-section">
+        <div class="raw-selector">
+          <button class="raw-tab" [class.active]="rawEditTarget() === 'global'" (click)="rawEditTarget.set('global'); loadRawContent()">Global settings.json</button>
+          @if (projectConfig()) {
+            <button class="raw-tab" [class.active]="rawEditTarget() === 'project'" (click)="rawEditTarget.set('project'); loadRawContent()">Project settings.json</button>
+            <button class="raw-tab" [class.active]="rawEditTarget() === 'project-local'" (click)="rawEditTarget.set('project-local'); loadRawContent()">Project settings.local.json</button>
+          }
+        </div>
+
+        @if (rawEditTarget() !== 'global' && !projectConfig()) {
+          <div class="project-selector">
+            <label>Project:</label>
+            <select [ngModel]="selectedProjectDir()" (ngModelChange)="selectedProjectDir.set($event); loadProjectConfig()">
+              <option value="">Select a project...</option>
+              @for (dir of projectDirs(); track dir) {
+                <option [value]="dir">{{ dir }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <textarea
+          class="raw-editor"
+          [ngModel]="rawEditContent()"
+          (ngModelChange)="rawEditContent.set($event)"
+          spellcheck="false"
+        ></textarea>
+        <button class="save-btn" (click)="saveRawContent()">Save</button>
+      </div>
+    }
+  </div>
+
+  <!-- Plugin detail modal (global, outside section blocks) -->
+  @if (selectedPlugin(); as plugin) {
+    <div class="modal-overlay" (click)="closePluginDetail()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ plugin.name }}</h3>
+          <div class="modal-header-actions">
+            @if (installing() === plugin.name + '@' + plugin.marketplace) {
+              <span class="installing-badge">Installing...</span>
+            } @else if (plugin.installed) {
+              <button class="uninstall-btn" (click)="uninstallPlugin(plugin)">Uninstall</button>
+            } @else {
+              <button class="install-btn" (click)="installPlugin(plugin)">Install</button>
+            }
+            <button class="close-btn" (click)="closePluginDetail()">X</button>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-info-grid">
+            <div class="detail-info-item">
+              <span class="detail-label">Description</span>
+              <span class="detail-value">{{ plugin.description }}</span>
+            </div>
+            @if (plugin.author?.name) {
+              <div class="detail-info-item">
+                <span class="detail-label">Author</span>
+                <span class="detail-value">{{ plugin.author?.name }}{{ plugin.author?.email ? ' (' + plugin.author?.email + ')' : '' }}</span>
+              </div>
+            }
+            @if (plugin.category) {
+              <div class="detail-info-item">
+                <span class="detail-label">Category</span>
+                <span class="detail-value"><span class="plugin-category">{{ plugin.category }}</span></span>
+              </div>
+            }
+            <div class="detail-info-item">
+              <span class="detail-label">Marketplace</span>
+              <span class="detail-value">{{ plugin.marketplace }}</span>
+            </div>
+            @if (plugin.installCount) {
+              <div class="detail-info-item">
+                <span class="detail-label">Installs</span>
+                <span class="detail-value">{{ plugin.installCount | number }}</span>
+              </div>
+            }
+            @if (plugin.homepage) {
+              <div class="detail-info-item">
+                <span class="detail-label">Homepage</span>
+                <span class="detail-value detail-link">{{ plugin.homepage }}</span>
+              </div>
+            }
+            @if (plugin.source) {
+              <div class="detail-info-item">
+                <span class="detail-label">Source</span>
+                <span class="detail-value mono">{{ plugin.source }}</span>
+              </div>
+            }
+            @if (plugin.installed) {
+              <div class="detail-info-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="installed-badge">Installed</span>
+                  @if (plugin.installedVersion) {
+                    <span class="plugin-version">v{{ plugin.installedVersion }}</span>
+                  }
+                  @if (plugin.lastUpdated) {
+                    <span class="plugin-updated" [class.stale]="plugin.daysSinceUpdate !== undefined && plugin.daysSinceUpdate > 7">
+                      — updated {{ plugin.daysSinceUpdate === 0 ? 'today' : plugin.daysSinceUpdate === 1 ? 'yesterday' : plugin.daysSinceUpdate + 'd ago' }}
+                    </span>
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (selectedPluginDetail(); as detail) {
+          @if (detail.pluginJson) {
+            <div class="detail-section">
+              <h4>Plugin Configuration</h4>
+              <pre class="json-view">{{ detail.pluginJson | json }}</pre>
+            </div>
+          }
+          @if (detail.hasMcp && detail.mcpJson) {
+            <div class="detail-section">
+              <h4>MCP Servers</h4>
+              <pre class="json-view">{{ detail.mcpJson | json }}</pre>
+            </div>
+          }
+          @if (detail.skills.length > 0) {
+            <div class="detail-section">
+              <h4>Skills ({{ detail.skills.length }})</h4>
+              @for (skill of detail.skills; track skill.name) {
+                <div class="skill-item">
+                  <span class="skill-name">{{ skill.name }}</span>
+                  <pre class="skill-content">{{ skill.content }}</pre>
+                </div>
+              }
+            </div>
+          }
+        } @else if (plugin.installed) {
+          <div class="detail-section">
+            <span class="loading-text">Loading plugin details...</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (success()) {
+    <div class="toast success">{{ success() }}</div>
+  }
+  @if (error()) {
+    <div class="toast error" (click)="error.set(null)">{{ error() }}</div>
+  }
+</div>

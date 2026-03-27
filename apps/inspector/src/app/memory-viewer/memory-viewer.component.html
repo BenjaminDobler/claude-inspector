@@ -1,0 +1,30 @@
+<div class="memory-container">
+  @if (memories().length > 0) {
+    <div class="memory-summary">
+      {{ memories().length }} memory files
+    </div>
+
+    @for (mem of memories(); track mem.filename) {
+      <div class="memory-card" (click)="toggleExpand(mem.filename)">
+        <div class="memory-header">
+          <span class="memory-type-badge" [style.color]="getTypeColor(getMemoryType(mem.content))"
+                [style.borderColor]="getTypeColor(getMemoryType(mem.content))">
+            {{ getMemoryType(mem.content) }}
+          </span>
+          <span class="memory-name">{{ getMemoryName(mem.content) || mem.filename }}</span>
+        </div>
+        @if (getMemoryDescription(mem.content)) {
+          <div class="memory-desc">{{ getMemoryDescription(mem.content) }}</div>
+        }
+
+        @if (expandedFile() === mem.filename) {
+          <div class="memory-content">
+            <pre>{{ mem.content }}</pre>
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <div class="empty">No memory files found for this project</div>
+  }
+</div>

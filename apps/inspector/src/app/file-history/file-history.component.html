@@ -1,0 +1,40 @@
+<div class="file-history-container">
+  @if (files().length > 0) {
+    <div class="files-summary">
+      <span>{{ files().length }} files tracked</span>
+    </div>
+
+    @for (file of files(); track file.fileHash) {
+      <div class="file-card" (click)="toggleExpand(file.fileHash)">
+        <div class="file-header">
+          <span class="file-hash">{{ file.fileHash }}</span>
+          <span class="version-count">{{ file.versions.length }} versions</span>
+        </div>
+
+        @if (expandedHash() === file.fileHash) {
+          <div class="versions-list">
+            @for (ver of file.versions; track ver.version) {
+              <div class="version-item" [class.selected]="selectedVersion() === file.fileHash + '@' + ver.version"
+                   (click)="selectVersion(file.fileHash, ver.version); $event.stopPropagation()">
+                <span class="version-name">{{ ver.version }}</span>
+                <span class="version-size">{{ formatSize(ver.size) }}</span>
+              </div>
+            }
+          </div>
+
+          @if (selectedVersion()) {
+            @for (ver of file.versions; track ver.version) {
+              @if (selectedVersion() === file.fileHash + '@' + ver.version) {
+                <div class="version-preview" (click)="$event.stopPropagation()">
+                  <pre>{{ ver.contentPreview }}</pre>
+                </div>
+              }
+            }
+          }
+        }
+      </div>
+    }
+  } @else {
+    <div class="empty">No file history found for this session</div>
+  }
+</div>

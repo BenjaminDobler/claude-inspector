@@ -1,0 +1,89 @@
+<div class="browser-layout">
+  <!-- Project list sidebar -->
+  <aside class="project-sidebar">
+    <div class="sidebar-header">
+      <h2>Projects</h2>
+    </div>
+    <div class="project-list">
+      @for (project of projects(); track project.pathKey) {
+        <button
+          class="project-item"
+          [class.selected]="selectedProject() === project.pathKey"
+          (click)="selectProject(project)"
+        >
+          <span class="project-name">{{ getProjectName(project.displayPath) }}</span>
+          <span class="project-path">{{ project.displayPath }}</span>
+          <span class="session-count">{{ project.sessionCount }} sessions</span>
+        </button>
+      }
+      @if (projects().length === 0 && !loading()) {
+        <div class="empty-state">No projects found</div>
+      }
+    </div>
+  </aside>
+
+  <!-- Session list -->
+  <section class="session-panel">
+    <!-- Active sessions -->
+    @if (activeSessions().length > 0) {
+      <div class="panel-header active-header">
+        <h2>Active Sessions</h2>
+        <span class="active-dot"></span>
+      </div>
+      <div class="active-list">
+        @for (active of activeSessions(); track active.sessionId) {
+          <button class="session-card active-card" (click)="watchActiveSession(active)">
+            <div class="session-id">
+              {{ active.sessionId | slice:0:8 }}...
+              <span class="live-badge">LIVE</span>
+            </div>
+            <div class="session-meta">
+              <span class="meta-item">PID {{ active.pid }}</span>
+              <span class="meta-item">{{ active.cwd }}</span>
+            </div>
+          </button>
+        }
+      </div>
+    }
+    @if (selectedProject()) {
+      <div class="panel-header">
+        <h2>Sessions</h2>
+      </div>
+      <div class="session-list">
+        @for (session of sessions(); track session.sessionId) {
+          <button
+            class="session-card"
+            [class.selected]="selectedSessionId() === session.sessionId"
+            (click)="selectSession(session)"
+          >
+            <div class="session-id">{{ session.sessionId | slice:0:8 }}...</div>
+            <div class="session-meta">
+              <span class="meta-item">{{ formatFileSize(session.fileSize) }}</span>
+              <span class="meta-item">{{ formatDate(session.modifiedAt) }}</span>
+              @if (session.hasSubagents) {
+                <span class="meta-badge">{{ session.subagentCount }} agents</span>
+              }
+            </div>
+          </button>
+        }
+        @if (sessions().length === 0 && !loading()) {
+          <div class="empty-state">No sessions found</div>
+        }
+      </div>
+    } @else {
+      <div class="empty-state center">
+        <p>Select a project to view sessions</p>
+      </div>
+    }
+  </section>
+</div>
+
+@if (loading()) {
+  <div class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+}
+
+@if (error()) {
+  <div class="error-banner">{{ error() }}</div>
+}

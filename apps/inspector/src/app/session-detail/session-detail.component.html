@@ -1,0 +1,169 @@
+<div class="detail-layout">
+  @if (store.loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Loading session...</span>
+    </div>
+  } @else if (store.sessionStats(); as stats) {
+    <!-- Header -->
+    <div class="detail-header">
+      <button class="back-btn" routerLink="/">Back</button>
+      <h2>Session {{ store.selectedSessionId() | slice:0:8 }}</h2>
+      <span class="header-meta">{{ stats.model }} | {{ formatDuration(stats.durationMs) }} | {{ formatCost(stats.estimatedCostUsd) }}</span>
+      @if (watcher.isWatching()) {
+        <button class="watch-btn watching" (click)="watcher.stopWatching()">Stop Watching</button>
+      } @else {
+        <button class="watch-btn" (click)="watcher.startWatching(store.selectedProject()!, store.selectedSessionId()!)">Watch Live</button>
+      }
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab" [class.active]="activeTab() === 'overview'" (click)="activeTab.set('overview')">Overview</button>
+      <button class="tab" [class.active]="activeTab() === 'timeline'" (click)="activeTab.set('timeline')">Timeline</button>
+      <button class="tab" [class.active]="activeTab() === 'tokens'" (click)="activeTab.set('tokens')">Tokens</button>
+      <button class="tab" [class.active]="activeTab() === 'tools'" (click)="activeTab.set('tools')">Tools</button>
+      <button class="tab" [class.active]="activeTab() === 'tree'" (click)="activeTab.set('tree')">Tree</button>
+      <button class="tab" [class.active]="activeTab() === 'replay'" (click)="activeTab.set('replay')">Replay</button>
+      <button class="tab" [class.active]="activeTab() === 'search'" (click)="activeTab.set('search')">Search</button>
+      <button class="tab" [class.active]="activeTab() === 'insights'" (click)="activeTab.set('insights')">Insights</button>
+      <button class="tab" [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Tasks</button>
+      <button class="tab" [class.active]="activeTab() === 'files'" (click)="activeTab.set('files')">Files</button>
+      <button class="tab" [class.active]="activeTab() === 'memory'" (click)="activeTab.set('memory')">Memory</button>
+      @if (store.plans().length > 0) {
+        <button class="tab" [class.active]="activeTab() === 'plans'" (click)="activeTab.set('plans')">
+          Plans <span class="tab-badge">{{ store.plans().length }}</span>
+        </button>
+      }
+      <button class="export-btn" (click)="exportSession()">Export</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      @switch (activeTab()) {
+        @case ('overview') {
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Duration</div>
+              <div class="stat-value">{{ formatDuration(stats.durationMs) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Messages</div>
+              <div class="stat-value">{{ stats.totalMessages }}</div>
+              <div class="stat-detail">{{ stats.userMessages }} user / {{ stats.assistantMessages }} assistant</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Tool Calls</div>
+              <div class="stat-value">{{ stats.totalToolCalls }}</div>
+              @if (stats.totalToolErrors > 0) {
+                <div class="stat-detail error">{{ stats.totalToolErrors }} errors</div>
+              }
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Input Tokens</div>
+              <div class="stat-value">{{ formatTokens(stats.totalInputTokens) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Output Tokens</div>
+              <div class="stat-value">{{ formatTokens(stats.totalOutputTokens) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Cache Read</div>
+              <div class="stat-value">{{ formatTokens(stats.totalCacheReadTokens) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Cache Creation</div>
+              <div class="stat-value">{{ formatTokens(stats.totalCacheCreationTokens) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Est. Cost</div>
+              <div class="stat-value">{{ formatCost(stats.estimatedCostUsd) }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Model</div>
+              <div class="stat-value model">{{ stats.model }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Version</div>
+              <div class="stat-value">{{ stats.version }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Branch</div>
+              <div class="stat-value">{{ stats.gitBranch }}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Subagents</div>
+              <div class="stat-value">{{ stats.subagentCount }}</div>
+            </div>
+          </div>
+
+          <div class="time-range">
+            <span>{{ formatDate(stats.startTime) }}</span>
+            <span class="separator">-></span>
+            <span>{{ formatDate(stats.endTime) }}</span>
+          </div>
+        }
+
+        @case ('timeline') {
+          <app-timeline [entries]="store.rawEntries()"></app-timeline>
+        }
+
+        @case ('tokens') {
+          <app-token-chart [dataPoints]="store.tokenTimeline()"></app-token-chart>
+        }
+
+        @case ('tools') {
+          <app-tool-stats [tools]="store.toolStats()"></app-tool-stats>
+        }
+
+        @case ('tree') {
+          <app-conversation-tree [entries]="store.rawEntries()"></app-conversation-tree>
+        }
+
+        @case ('replay') {
+          <app-replay [entries]="store.rawEntries()"></app-replay>
+        }
+
+        @case ('search') {
+          <app-session-search [entries]="store.rawEntries()"></app-session-search>
+        }
+
+        @case ('insights') {
+          <app-insights [entries]="store.rawEntries()"></app-insights>
+        }
+
+        @case ('tasks') {
+          <app-tasks-view [sessionId]="store.selectedSessionId()!"></app-tasks-view>
+        }
+
+        @case ('files') {
+          <app-file-history [sessionId]="store.selectedSessionId()!"></app-file-history>
+        }
+
+        @case ('memory') {
+          <app-memory-viewer [projectPathKey]="store.selectedProject()!"></app-memory-viewer>
+        }
+
+        @case ('plans') {
+          <div class="plans-container">
+            @for (plan of store.plans(); track plan.slug) {
+              <div class="plan-card">
+                <div class="plan-header">
+                  <span class="plan-slug">{{ plan.slug }}</span>
+                  <span class="plan-modified">{{ formatDate(+plan.modifiedAt) }}</span>
+                </div>
+                <div class="plan-content">
+                  <pre class="plan-markdown">{{ plan.content }}</pre>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <p>No session data loaded</p>
+    </div>
+  }
+</div>

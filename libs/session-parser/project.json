@@ -1,0 +1,9 @@
+{
+  "name": "session-parser",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/session-parser/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project session-parser --web",
+  "targets": {}
+}

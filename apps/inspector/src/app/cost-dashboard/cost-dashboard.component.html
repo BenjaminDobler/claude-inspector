@@ -1,0 +1,51 @@
+<div class="cost-container">
+  <div class="cost-header">
+    <h2>Cost Dashboard</h2>
+  </div>
+
+  @if (!loading()) {
+    <!-- Summary cards -->
+    <div class="cost-summary">
+      <div class="cost-card highlight">
+        <span class="cost-label">Last 7 days</span>
+        <span class="cost-amount">{{ formatCost(last7DaysSpend()) }}</span>
+      </div>
+      <div class="cost-card">
+        <span class="cost-label">Last 30 days</span>
+        <span class="cost-amount">{{ formatCost(last30DaysSpend()) }}</span>
+      </div>
+      <div class="cost-card">
+        <span class="cost-label">All time</span>
+        <span class="cost-amount">{{ formatCost(totalSpend()) }}</span>
+      </div>
+      <div class="cost-card">
+        <span class="cost-label">Models used</span>
+        <span class="cost-amount">{{ modelNames().length }}</span>
+      </div>
+    </div>
+
+    <!-- Daily breakdown -->
+    <div class="daily-table">
+      <div class="table-header">
+        <span class="col-date">Date</span>
+        <span class="col-tokens">Input</span>
+        <span class="col-tokens">Output</span>
+        <span class="col-tokens">Cache Read</span>
+        <span class="col-tokens">Cache Write</span>
+        <span class="col-cost">Cost</span>
+      </div>
+      @for (day of dayCosts(); track day.date) {
+        <div class="table-row">
+          <span class="col-date">{{ day.date }}</span>
+          <span class="col-tokens">{{ formatTokens(getDayTotal(day, 'input')) }}</span>
+          <span class="col-tokens">{{ formatTokens(getDayTotal(day, 'output')) }}</span>
+          <span class="col-tokens">{{ formatTokens(getDayTotal(day, 'cacheRead')) }}</span>
+          <span class="col-tokens">{{ formatTokens(getDayTotal(day, 'cacheWrite')) }}</span>
+          <span class="col-cost" [class.expensive]="day.totalCost > 1">{{ formatCost(day.totalCost) }}</span>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="loading">Loading cost data...</div>
+  }
+</div>

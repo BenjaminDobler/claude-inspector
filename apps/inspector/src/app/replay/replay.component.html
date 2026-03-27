@@ -1,0 +1,138 @@
+<div class="replay-container">
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-buttons">
+      <button class="ctrl-btn" (click)="stepBack()" [disabled]="currentIndex() === 0">
+        &lt;&lt;
+      </button>
+      <button class="ctrl-btn play-btn" (click)="togglePlayPause()">
+        {{ isPlaying() ? 'Pause' : 'Play' }}
+      </button>
+      <button class="ctrl-btn" (click)="stepForward()" [disabled]="currentIndex() >= filteredEntries.length - 1">
+        &gt;&gt;
+      </button>
+      <button class="ctrl-btn" (click)="stop()">
+        Stop
+      </button>
+      <button class="ctrl-btn context-toggle" [class.active]="showContext()" (click)="showContext.set(!showContext())">
+        Context
+      </button>
+    </div>
+
+    <!-- Scrubber -->
+    <div class="scrubber">
+      <input
+        type="range"
+        [min]="0"
+        [max]="filteredEntries.length - 1"
+        [value]="currentIndex()"
+        (input)="onScrub($event)"
+        class="scrubber-input"
+      />
+      <div class="scrubber-info">
+        <span>{{ currentIndex() + 1 }} / {{ filteredEntries.length }}</span>
+        @if (currentEntry(); as entry) {
+          <span>{{ formatTime(entry.timestamp) }}</span>
+        }
+      </div>
+    </div>
+
+    <!-- Speed controls -->
+    <div class="speed-controls">
+      <span class="speed-label">Speed:</span>
+      @for (speed of [0.5, 1, 2, 5, 10]; track speed) {
+        <button
+          class="speed-btn"
+          [class.active]="playbackSpeed() === speed"
+          (click)="setSpeed(speed)"
+        >
+          {{ speed }}x
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="keyboard-hints">
+    <span>Space: play/pause</span>
+    <span>Left/Right: step</span>
+    <span>Home/End: jump</span>
+  </div>
+
+  <!-- Main content area -->
+  <div class="replay-body" [class.with-context]="showContext()">
+    <!-- Conversation history (left side when context is on) -->
+    @if (showContext()) {
+      <div class="context-panel">
+        <!-- Running stats -->
+        <div class="running-stats">
+          <div class="stat-mini">
+            <span class="stat-mini-label">Elapsed</span>
+            <span class="stat-mini-value">{{ formatDuration(snapshot().elapsedMs) }}</span>
+          </div>
+          <div class="stat-mini">
+            <span class="stat-mini-label">In</span>
+            <span class="stat-mini-value token-in">{{ formatTokens(snapshot().totalInputTokens) }}</span>
+          </div>
+          <div class="stat-mini">
+            <span class="stat-mini-label">Out</span>
+            <span class="stat-mini-value token-out">{{ formatTokens(snapshot().totalOutputTokens) }}</span>
+          </div>
+          <div class="stat-mini">
+            <span class="stat-mini-label">Cache</span>
+            <span class="stat-mini-value token-cache">{{ formatTokens(snapshot().totalCacheTokens) }}</span>
+          </div>
+          <div class="stat-mini">
+            <span class="stat-mini-label">Tools</span>
+            <span class="stat-mini-value">{{ snapshot().totalToolCalls }}@if (snapshot().totalToolErrors > 0) { <span class="error-count"> ({{ snapshot().totalToolErrors }} err)</span>}</span>
+          </div>
+        </div>
+
+        <!-- Tools used so far -->
+        @if (sortedToolsUsed().length > 0) {
+          <div class="tools-used">
+            @for (tool of sortedToolsUsed(); track tool[0]) {
+              <span class="tool-chip">{{ tool[0] }} <span class="tool-count">{{ tool[1] }}</span></span>
+            }
+          </div>
+        }
+
+        <!-- Conversation scroll -->
+        <div class="conversation-scroll" #conversationScroll>
+          @for (msg of snapshot().messages; track msg.entry.uuid; let i = $index) {
+            <div
+              class="conv-message"
+              [attr.data-type]="msg.type"
+              [class.current]="i === currentIndex()"
+              (click)="currentIndex.set(i)"
+            >
+              <div class="conv-msg-header">
+                <span class="conv-msg-type">{{ msg.type === 'tool_use' ? (msg.toolName || 'tool') : msg.type === 'user_message' ? 'user' : msg.type === 'assistant_message' ? 'assistant' : msg.type }}</span>
+                <span class="conv-msg-time">{{ formatTime(msg.entry.timestamp) }}</span>
+              </div>
+              <div class="conv-msg-text">{{ truncate(msg.text || '...', 150) }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Current message detail (right side or full width) -->
+    @if (currentEntry(); as entry) {
+      <div class="message-display">
+        <div class="message-header">
+          <span class="message-type" [attr.data-type]="currentType()">
+            {{ currentType() }}
+          </span>
+          @if (currentToolName()) {
+            <span class="tool-badge">{{ currentToolName() }}</span>
+          }
+          <span class="message-time">{{ formatTime(entry.timestamp) }}</span>
+          <span class="message-uuid">{{ entry.uuid | slice:0:8 }}</span>
+        </div>
+        <div class="message-body">
+          {{ currentText() || '(no text content)' }}
+        </div>
+      </div>
+    }
+  </div>
+</div>
