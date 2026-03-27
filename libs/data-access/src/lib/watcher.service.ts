@@ -3,7 +3,6 @@ import { TauriBridgeService, ActiveSessionInfo } from './tauri-bridge.service';
 import { SessionStoreService } from './session-store.service';
 import { NotificationService } from './notification.service';
 import { parseSessionEntries } from '@claude-inspector/session-parser';
-import { RawSessionEntry } from '@claude-inspector/types';
 
 @Injectable({ providedIn: 'root' })
 export class WatcherService implements OnDestroy {

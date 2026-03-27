@@ -77,7 +77,7 @@ export class CostDashboardComponent implements OnInit {
     try {
       const data = await this.bridge.readCostData();
       this.costData.set(data);
-    } catch {} finally {
+    } catch { /* ignore */ } finally {
       this.loading.set(false);
     }
   }

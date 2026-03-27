@@ -12,7 +12,7 @@ import { TauriBridgeService, FileHistoryEntry } from '@claude-inspector/data-acc
 export class FileHistoryComponent implements OnChanges {
   private bridge = inject(TauriBridgeService);
 
-  @Input() sessionId: string = '';
+  @Input() sessionId = '';
 
   files = signal<FileHistoryEntry[]>([]);
   expandedHash = signal<string | null>(null);
@@ -28,7 +28,7 @@ export class FileHistoryComponent implements OnChanges {
     try {
       const files = await this.bridge.readFileHistory(this.sessionId);
       this.files.set(files);
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   toggleExpand(hash: string) {

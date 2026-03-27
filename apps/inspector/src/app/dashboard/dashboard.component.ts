@@ -40,7 +40,7 @@ export class DashboardComponent implements OnInit {
       this.totalSessions.set(stats.reduce((s, d) => s + d.sessionCount, 0));
       this.totalToolCalls.set(stats.reduce((s, d) => s + d.toolCallCount, 0));
       this.activeDays.set(stats.length);
-    } catch {} finally {
+    } catch { /* ignore */ } finally {
       this.loading.set(false);
     }
   }

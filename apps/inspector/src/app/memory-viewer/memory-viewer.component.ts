@@ -12,7 +12,7 @@ import { TauriBridgeService, MemoryFile } from '@claude-inspector/data-access';
 export class MemoryViewerComponent implements OnChanges {
   private bridge = inject(TauriBridgeService);
 
-  @Input() projectPathKey: string = '';
+  @Input() projectPathKey = '';
 
   memories = signal<MemoryFile[]>([]);
   expandedFile = signal<string | null>(null);
@@ -27,7 +27,7 @@ export class MemoryViewerComponent implements OnChanges {
     try {
       const files = await this.bridge.readProjectMemory(this.projectPathKey);
       this.memories.set(files);
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   toggleExpand(filename: string) {

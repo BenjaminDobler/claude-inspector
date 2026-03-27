@@ -12,7 +12,7 @@ import { TauriBridgeService, TaskItem } from '@claude-inspector/data-access';
 export class TasksViewComponent implements OnChanges {
   private bridge = inject(TauriBridgeService);
 
-  @Input() sessionId: string = '';
+  @Input() sessionId = '';
 
   tasks = signal<TaskItem[]>([]);
   expandedId = signal<string | null>(null);
@@ -27,7 +27,7 @@ export class TasksViewComponent implements OnChanges {
     try {
       const tasks = await this.bridge.readSessionTasks(this.sessionId);
       this.tasks.set(tasks);
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   toggleExpand(id: string) {

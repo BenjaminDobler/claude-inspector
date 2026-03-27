@@ -329,7 +329,7 @@ export class ConfigComponent implements OnInit {
       const projects = await this.bridge.listProjects();
       const dirs = projects.map((p) => '/' + p.displayPath);
       this.projectDirs.set(dirs);
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   async loadProjectConfig(): Promise<void> {

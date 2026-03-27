@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import {
   ProjectInfo,
   SessionInfo,
@@ -17,6 +17,7 @@ import { TauriBridgeService, PlanFile } from './tauri-bridge.service';
 
 @Injectable({ providedIn: 'root' })
 export class SessionStoreService {
+  private tauriBridge = inject(TauriBridgeService);
   // State signals
   readonly projects = signal<ProjectInfo[]>([]);
   readonly selectedProject = signal<string | null>(null);
@@ -45,8 +46,6 @@ export class SessionStoreService {
     if (entries.length === 0) return [];
     return computeTokenTimeline(entries);
   });
-
-  constructor(private tauriBridge: TauriBridgeService) {}
 
   async loadProjects(): Promise<void> {
     this.loading.set(true);

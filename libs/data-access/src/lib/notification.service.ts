@@ -1,6 +1,5 @@
 import { Injectable, signal } from '@angular/core';
 import { RawSessionEntry, ContentBlock, ToolUseBlock } from '@claude-inspector/types';
-import { getEntryType } from '@claude-inspector/session-parser';
 
 export interface NotificationRule {
   id: string;
@@ -232,7 +231,7 @@ export class NotificationService {
   private isToolError(entry: RawSessionEntry): boolean {
     if (!entry.message?.content || !Array.isArray(entry.message.content)) return false;
     return (entry.message.content as ContentBlock[]).some(
-      (b) => b.type === 'tool_result' && (b as any).is_error
+      (b) => b.type === 'tool_result' && (b as ContentBlock & { is_error?: boolean }).is_error
     );
   }
 
@@ -255,8 +254,7 @@ export class NotificationService {
     );
   }
 
-  private getErrorToolName(entry: RawSessionEntry): string {
-    // The error is in a tool_result, tool name is in a prior entry
+  private getErrorToolName(_entry: RawSessionEntry): string {
     return 'tool';
   }
 
@@ -281,13 +279,13 @@ export class NotificationService {
           return existing ? { ...def, ...existing } : def;
         });
       }
-    } catch {}
+    } catch { /* ignore storage errors */ }
     return [...DEFAULT_RULES];
   }
 
   private saveRules(rules: NotificationRule[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rules));
-    } catch {}
+    } catch { /* ignore storage errors */ }
   }
 }
