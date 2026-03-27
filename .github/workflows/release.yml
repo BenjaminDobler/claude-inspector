@@ -1,0 +1,220 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 0.1.0)'
+        required: true
+        type: string
+      platforms:
+        description: 'Platforms to build'
+        required: true
+        type: choice
+        options:
+          - all
+          - macos
+          - windows
+          - linux
+        default: all
+      draft:
+        description: 'Create as draft release'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Claude Inspector v${{ inputs.version }}
+          draft: ${{ inputs.draft }}
+          prerelease: false
+          generate_release_notes: true
+
+  build-macos:
+    needs: create-release
+    if: ${{ inputs.platforms == 'all' || inputs.platforms == 'macos' }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+          - target: x86_64-apple-darwin
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Apple certificate for code signing
+      - name: Install Apple certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: v${{ inputs.version }}
+          releaseName: Claude Inspector v${{ inputs.version }}
+          releaseBody: ''
+          releaseDraft: ${{ inputs.draft }}
+          prerelease: false
+          args: --target ${{ matrix.target }}
+
+      # Cleanup keychain
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+
+  build-windows:
+    needs: create-release
+    if: ${{ inputs.platforms == 'all' || inputs.platforms == 'windows' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{ inputs.version }}
+          releaseName: Claude Inspector v${{ inputs.version }}
+          releaseBody: ''
+          releaseDraft: ${{ inputs.draft }}
+          prerelease: false
+
+  build-linux:
+    needs: create-release
+    if: ${{ inputs.platforms == 'all' || inputs.platforms == 'linux' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{ inputs.version }}
+          releaseName: Claude Inspector v${{ inputs.version }}
+          releaseBody: ''
+          releaseDraft: ${{ inputs.draft }}
+          prerelease: false
+
+  publish-release:
+    needs: [build-macos, build-windows, build-linux]
+    if: ${{ always() && needs.create-release.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        if: ${{ !inputs.draft }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          draft: false
