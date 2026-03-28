@@ -36,7 +36,7 @@ export class ToolsPageComponent implements OnInit {
   };
 
   ngOnInit() {
-    this.loadData();
+    setTimeout(() => this.loadData(), 0);
   }
 
   async loadData() {

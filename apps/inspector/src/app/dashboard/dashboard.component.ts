@@ -40,7 +40,8 @@ export class DashboardComponent implements OnInit {
   recentlyActive = signal<{ name: string; count: number }[]>([]);
 
   ngOnInit() {
-    this.loadData();
+    // Defer data loading to next frame so the skeleton renders first
+    setTimeout(() => this.loadData(), 0);
   }
 
   async loadData() {
