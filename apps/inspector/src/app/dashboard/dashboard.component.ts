@@ -45,15 +45,36 @@ export class DashboardComponent implements OnInit {
 
   async loadData() {
     try {
-      const [fullStats, history, hourly, projects, hygieneIssues] = await Promise.all([
+      const [fullStats, allHistory, hourly, projects, hygieneIssues] = await Promise.all([
         this.bridge.computeFullStats().catch(() => []),
-        this.bridge.readGlobalHistory(20).catch(() => []),
+        this.bridge.readGlobalHistory(500).catch(() => []),
         this.bridge.readHourlyActivity().catch(() => []),
         this.bridge.listProjects().catch(() => []),
         this.bridge.checkHygiene().catch(() => []),
       ]);
 
-      this.fullStats.set(fullStats);
+      const history = allHistory.slice(0, 20); // Recent 20 for display
+
+      // Merge history.jsonl dates into fullStats for older activity data
+      const statsMap = new Map(fullStats.map(s => [s.date, s]));
+      for (const h of allHistory) {
+        if (!h.timestamp) continue;
+        const d = new Date(h.timestamp);
+        const date = d.toISOString().slice(0, 10);
+        if (!statsMap.has(date)) {
+          statsMap.set(date, {
+            date,
+            messageCount: 1,
+            toolCallCount: 0,
+            inputTokens: 0, outputTokens: 0,
+            cacheReadTokens: 0, cacheWriteTokens: 0,
+            models: {},
+          });
+        }
+      }
+
+      const merged = Array.from(statsMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+      this.fullStats.set(merged);
       this.history.set(history);
       this.hourly.set(hourly);
       this.projectCount.set(projects.length);
