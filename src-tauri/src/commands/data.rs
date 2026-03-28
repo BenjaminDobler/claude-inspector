@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -435,6 +435,88 @@ pub fn read_global_tool_stats() -> Result<(Vec<GlobalToolStat>, Vec<ToolSequence
     seqs.truncate(10);
 
     Ok((tools, seqs))
+}
+
+// ─── Session notes/bookmarks ───
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionNote {
+    pub session_id: String,
+    pub project_path: String,
+    pub note: String,
+    pub tags: Vec<String>,
+    pub bookmarked: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+fn notes_path() -> Option<PathBuf> {
+    claude_dir().map(|d| d.join("inspector-notes.json"))
+}
+
+fn load_notes() -> Vec<SessionNote> {
+    notes_path()
+        .and_then(|p| fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
+fn save_notes(notes: &[SessionNote]) -> Result<(), String> {
+    let path = notes_path().ok_or("Could not find home directory")?;
+    let content = serde_json::to_string_pretty(notes).map_err(|e| e.to_string())?;
+    fs::write(path, content).map_err(|e| e.to_string())
+}
+
+#[command]
+pub fn list_session_notes() -> Result<Vec<SessionNote>, String> {
+    Ok(load_notes())
+}
+
+#[command]
+pub fn save_session_note(
+    session_id: String,
+    project_path: String,
+    note: String,
+    tags: Vec<String>,
+    bookmarked: bool,
+) -> Result<(), String> {
+    let mut notes = load_notes();
+    let now = chrono_now();
+
+    if let Some(existing) = notes.iter_mut().find(|n| n.session_id == session_id) {
+        existing.note = note;
+        existing.tags = tags;
+        existing.bookmarked = bookmarked;
+        existing.updated_at = now;
+    } else {
+        notes.push(SessionNote {
+            session_id,
+            project_path,
+            note,
+            tags,
+            bookmarked,
+            created_at: now.clone(),
+            updated_at: now,
+        });
+    }
+
+    save_notes(&notes)
+}
+
+#[command]
+pub fn delete_session_note(session_id: String) -> Result<(), String> {
+    let mut notes = load_notes();
+    notes.retain(|n| n.session_id != session_id);
+    save_notes(&notes)
+}
+
+fn chrono_now() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    secs.to_string()
 }
 
 // ─── Memory ───

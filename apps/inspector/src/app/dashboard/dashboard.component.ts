@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { TauriBridgeService, DailyActivity, HistoryEntry, CostData } from '@claude-inspector/data-access';
+import { TauriBridgeService, DailyActivity, HistoryEntry, CostData, HygieneIssue } from '@claude-inspector/data-access';
 
 @Component({
   selector: 'app-dashboard',
@@ -29,18 +29,30 @@ export class DashboardComponent implements OnInit {
   // Cost by model
   modelCosts = signal<{ model: string; cost: number }[]>([]);
 
+  // Dashboard enhancements
+  thisMonthCost = signal(0);
+  projectedMonthCost = signal(0);
+  lastMonthCost = signal(0);
+  monthTrend = signal(0);
+  optimizationSavings = signal(0);
+  topModel = signal('');
+  topModelPct = signal(0);
+  hygieneIssues = signal<HygieneIssue[]>([]);
+  recentlyActive = signal<{ name: string; count: number }[]>([]);
+
   ngOnInit() {
     this.loadData();
   }
 
   async loadData() {
     try {
-      const [stats, history, hourly, costData, projects] = await Promise.all([
+      const [stats, history, hourly, costData, projects, hygieneIssues] = await Promise.all([
         this.bridge.readUsageStats().catch(() => []),
         this.bridge.readGlobalHistory(20).catch(() => []),
         this.bridge.readHourlyActivity().catch(() => []),
         this.bridge.readCostData().catch(() => null),
         this.bridge.listProjects().catch(() => []),
+        this.bridge.checkHygiene().catch(() => []),
       ]);
 
       this.stats.set(stats);
@@ -75,7 +87,60 @@ export class DashboardComponent implements OnInit {
           .map(([model, cost]) => ({ model: this.shortModel(model), cost }))
           .sort((a, b) => b.cost - a.cost);
         this.modelCosts.set(sorted);
+
+        // Cost projections
+        const now = new Date();
+        const dayOfMonth = now.getDate();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const thisMonthStr = now.toISOString().slice(0, 7); // "2026-03"
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthStr = lastMonthDate.toISOString().slice(0, 7);
+
+        let thisMonth = 0;
+        let lastMonth = 0;
+        for (const [date, models] of Object.entries(costData.days)) {
+          let dayCost = 0;
+          for (const [model, usage] of Object.entries(models)) {
+            const prices = costData.pricing[model] || { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 };
+            dayCost += (usage.input / 1e6) * prices.input + (usage.output / 1e6) * prices.output +
+              (usage.cacheRead / 1e6) * prices.cacheRead + (usage.cacheWrite / 1e6) * prices.cacheWrite;
+          }
+          if (date.startsWith(thisMonthStr)) thisMonth += dayCost;
+          if (date.startsWith(lastMonthStr)) lastMonth += dayCost;
+        }
+
+        this.thisMonthCost.set(thisMonth);
+        this.projectedMonthCost.set(dayOfMonth > 0 ? (thisMonth / dayOfMonth) * daysInMonth : 0);
+        this.lastMonthCost.set(lastMonth);
+        this.monthTrend.set(lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0);
+
+        // Optimization ideas
+        if (sorted.length > 0) {
+          const topCost = sorted[0].cost;
+          this.topModel.set(sorted[0].model);
+          this.topModelPct.set(total > 0 ? (topCost / total) * 100 : 0);
+          // If top model is Opus and accounts for >70%, suggest Sonnet
+          if (sorted[0].model.includes('opus') && this.topModelPct() > 70) {
+            this.optimizationSavings.set(topCost * 0.8); // Sonnet is ~80% cheaper
+          }
+        }
       }
+
+      // Hygiene
+      this.hygieneIssues.set(hygieneIssues.slice(0, 3));
+
+      // Recently active projects (from history)
+      const projectCounts = new Map<string, number>();
+      for (const h of history) {
+        const name = this.getProjectName(h.project);
+        if (name) projectCounts.set(name, (projectCounts.get(name) || 0) + 1);
+      }
+      this.recentlyActive.set(
+        Array.from(projectCounts.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 8)
+      );
     } catch { /* ignore */ } finally {
       this.loading.set(false);
     }

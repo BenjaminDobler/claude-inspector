@@ -12,8 +12,9 @@ import { InsightsComponent } from '../insights/insights.component';
 import { TasksViewComponent } from '../tasks-view/tasks-view.component';
 import { FileHistoryComponent } from '../file-history/file-history.component';
 import { MemoryViewerComponent } from '../memory-viewer/memory-viewer.component';
+import { SessionNotesComponent } from '../session-notes/session-notes.component';
 
-type Tab = 'overview' | 'timeline' | 'tokens' | 'tools' | 'tree' | 'replay' | 'search' | 'insights' | 'plans' | 'tasks' | 'files' | 'memory';
+type Tab = 'overview' | 'timeline' | 'tokens' | 'tools' | 'tree' | 'replay' | 'search' | 'insights' | 'plans' | 'tasks' | 'files' | 'memory' | 'notes';
 
 @Component({
   selector: 'app-session-detail',
@@ -31,6 +32,7 @@ type Tab = 'overview' | 'timeline' | 'tokens' | 'tools' | 'tree' | 'replay' | 's
     TasksViewComponent,
     FileHistoryComponent,
     MemoryViewerComponent,
+    SessionNotesComponent,
   ],
   templateUrl: './session-detail.component.html',
   styleUrl: './session-detail.component.scss',

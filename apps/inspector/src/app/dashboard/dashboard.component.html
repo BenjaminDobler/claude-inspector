@@ -99,6 +99,87 @@
         </div>
       </div>
     </div>
+    <!-- Cost Projection + Trends -->
+    @if (projectedMonthCost() > 0) {
+      <div class="two-col">
+        <div class="widget">
+          <div class="widget-header">
+            <span class="widget-title">Monthly Projection</span>
+          </div>
+          <div class="projection-body">
+            <div class="projection-item">
+              <span class="projection-label">So Far</span>
+              <span class="projection-value">{{ formatCost(thisMonthCost()) }}</span>
+            </div>
+            <div class="projection-item">
+              <span class="projection-label">Projected</span>
+              <span class="projection-value projected">{{ formatCost(projectedMonthCost()) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="widget">
+          <div class="widget-header">
+            <span class="widget-title">Trends</span>
+          </div>
+          <div class="trends-body">
+            <div class="trend-row">
+              <span class="trend-label">This Month</span>
+              <span class="trend-value">{{ formatCost(thisMonthCost()) }}</span>
+              @if (monthTrend() !== 0) {
+                <span class="trend-arrow" [class.up]="monthTrend() > 0" [class.down]="monthTrend() < 0">
+                  {{ monthTrend() > 0 ? '↑' : '↓' }} {{ monthTrend() > 0 ? monthTrend().toFixed(0) : (-monthTrend()).toFixed(0) }}%
+                </span>
+              }
+            </div>
+            <div class="trend-row">
+              <span class="trend-label">Last Month</span>
+              <span class="trend-value">{{ formatCost(lastMonthCost()) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Optimization ideas -->
+    @if (optimizationSavings() > 0) {
+      <div class="optimization-card">
+        <span class="opt-icon">💡</span>
+        <div class="opt-content">
+          <strong>Mix in Sonnet for simple tasks</strong>
+          <span class="opt-desc">{{ topModel() }} accounts for {{ topModelPct().toFixed(0) }}% of spend. Use Sonnet for quick edits and searches.</span>
+        </div>
+        <span class="opt-savings">-{{ formatCost(optimizationSavings()) }}</span>
+      </div>
+    }
+
+    <!-- Health alerts -->
+    @if (hygieneIssues().length > 0) {
+      <div class="alerts-section">
+        @for (issue of hygieneIssues(); track issue.title) {
+          <a class="alert-card" routerLink="/hygiene" [class.warning]="issue.severity === 'warning'">
+            <span class="alert-icon">{{ issue.severity === 'warning' ? '⚠' : 'ℹ' }}</span>
+            <span class="alert-text">{{ issue.title }} — {{ issue.description }}</span>
+            <span class="alert-arrow">›</span>
+          </a>
+        }
+      </div>
+    }
+
+    <!-- Recently Active -->
+    @if (recentlyActive().length > 0) {
+      <div class="recently-active">
+        <span class="section-label">Recently Active</span>
+        <div class="pill-row">
+          @for (p of recentlyActive(); track p.name) {
+            <span class="project-pill">
+              <span class="pill-dot"></span>
+              {{ p.name }} <span class="pill-count">{{ p.count }}</span>
+            </span>
+          }
+        </div>
+      </div>
+    }
   } @else {
     <div class="loading">Loading dashboard...</div>
   }

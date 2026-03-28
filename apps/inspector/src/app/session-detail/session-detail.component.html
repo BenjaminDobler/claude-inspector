@@ -31,6 +31,7 @@
       <button class="tab" [class.active]="activeTab() === 'tasks'" (click)="activeTab.set('tasks')">Tasks</button>
       <button class="tab" [class.active]="activeTab() === 'files'" (click)="activeTab.set('files')">Files</button>
       <button class="tab" [class.active]="activeTab() === 'memory'" (click)="activeTab.set('memory')">Memory</button>
+      <button class="tab" [class.active]="activeTab() === 'notes'" (click)="activeTab.set('notes')">Notes</button>
       @if (store.plans().length > 0) {
         <button class="tab" [class.active]="activeTab() === 'plans'" (click)="activeTab.set('plans')">
           Plans <span class="tab-badge">{{ store.plans().length }}</span>
@@ -143,6 +144,10 @@
 
         @case ('memory') {
           <app-memory-viewer [projectPathKey]="store.selectedProject()!"></app-memory-viewer>
+        }
+
+        @case ('notes') {
+          <app-session-notes [sessionId]="store.selectedSessionId()!" [projectPath]="store.selectedProject()!"></app-session-notes>
         }
 
         @case ('plans') {

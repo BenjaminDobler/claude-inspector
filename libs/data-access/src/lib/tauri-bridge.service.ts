@@ -101,6 +101,20 @@ export class TauriBridgeService {
     return invoke<[GlobalToolStat[], ToolSequence[]]>('read_global_tool_stats');
   }
 
+  async listSessionNotes(): Promise<SessionNote[]> {
+    return invoke<SessionNote[]>('list_session_notes');
+  }
+
+  async saveSessionNote(params: {
+    sessionId: string; projectPath: string; note: string; tags: string[]; bookmarked: boolean;
+  }): Promise<void> {
+    return invoke('save_session_note', params);
+  }
+
+  async deleteSessionNote(sessionId: string): Promise<void> {
+    return invoke('delete_session_note', { sessionId });
+  }
+
   async readGlobalHistory(limit?: number): Promise<HistoryEntry[]> {
     return invoke<HistoryEntry[]>('read_global_history', { limit: limit || 500 });
   }
@@ -290,6 +304,16 @@ export interface HygieneIssue {
   description: string;
   action: string;
   project: string;
+}
+
+export interface SessionNote {
+  sessionId: string;
+  projectPath: string;
+  note: string;
+  tags: string[];
+  bookmarked: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GlobalToolStat {

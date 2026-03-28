@@ -1,0 +1,50 @@
+<div class="notes-container">
+  <!-- Bookmark toggle -->
+  <div class="bookmark-row">
+    <button class="bookmark-btn" [class.active]="bookmarked()" (click)="toggleBookmark()">
+      {{ bookmarked() ? '★' : '☆' }} {{ bookmarked() ? 'Bookmarked' : 'Bookmark' }}
+    </button>
+    @if (success()) {
+      <span class="save-indicator">{{ success() }}</span>
+    }
+  </div>
+
+  <!-- Note editor -->
+  <div class="note-section">
+    <label class="note-label">Notes</label>
+    <textarea
+      class="note-textarea"
+      placeholder="Add notes about this session... (e.g. 'Great refactoring session', 'Failed due to wrong approach', 'Reference for auth pattern')"
+      [ngModel]="editNote()"
+      (ngModelChange)="editNote.set($event)"
+      rows="4"
+    ></textarea>
+  </div>
+
+  <!-- Tags -->
+  <div class="tags-section">
+    <label class="note-label">Tags</label>
+    <div class="quick-tags">
+      @for (tag of predefinedTags; track tag) {
+        <button class="quick-tag" (click)="addTag(tag)">{{ tag }}</button>
+      }
+    </div>
+    <input
+      type="text"
+      class="tags-input"
+      placeholder="comma-separated tags (e.g. good, feature, auth)"
+      [ngModel]="editTags()"
+      (ngModelChange)="editTags.set($event)"
+    />
+  </div>
+
+  <!-- Actions -->
+  <div class="note-actions">
+    <button class="save-btn" (click)="save()" [disabled]="saving()">
+      {{ saving() ? 'Saving...' : 'Save Note' }}
+    </button>
+    @if (note()) {
+      <button class="delete-btn" (click)="deleteNote()">Delete</button>
+    }
+  </div>
+</div>
