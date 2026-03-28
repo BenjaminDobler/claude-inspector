@@ -20,6 +20,7 @@ export class WatcherService implements OnDestroy {
   private lastLine = 0;
   private watchingProject = '';
   private watchingSession = '';
+  private watchingPid: number | null = null;
 
   constructor() {
     this.activeCheckTimer = setInterval(() => {
@@ -51,6 +52,10 @@ export class WatcherService implements OnDestroy {
     this.lastLine = this.sessionStore.rawEntries().length;
     this.isWatching.set(true);
     this.notifications.startIdleWatch();
+
+    // Find and cache the PID for this session
+    const active = this.activeSessions().find(s => s.sessionId === sessionId);
+    this.watchingPid = active?.pid ?? null;
 
     this.pollTimer = setInterval(async () => {
       await this.poll();
@@ -86,9 +91,15 @@ export class WatcherService implements OnDestroy {
 
         // Auto-focus terminal if triggered
         if (needsFocus) {
-          const active = this.activeSessions().find(s => s.sessionId === this.watchingSession);
-          if (active) {
-            this.tauriBridge.focusSession(active.pid).catch(() => { /* ignore */ });
+          // Try cached PID first, then look up from active sessions
+          let pid = this.watchingPid;
+          if (!pid) {
+            const active = this.activeSessions().find(s => s.sessionId === this.watchingSession);
+            pid = active?.pid ?? null;
+            if (pid) this.watchingPid = pid;
+          }
+          if (pid) {
+            this.tauriBridge.focusSession(pid).catch(() => { /* ignore */ });
           }
         }
 
