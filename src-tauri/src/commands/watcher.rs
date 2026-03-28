@@ -135,26 +135,25 @@ pub fn focus_session(pid: u32) -> Result<String, String> {
 
         let name = String::from_utf8_lossy(&name_output.stdout).trim().to_string();
 
-        if name.contains("Terminal") || name.contains("iTerm") || name.contains("Warp")
-            || name.contains("Alacritty") || name.contains("kitty") || name.contains("Hyper")
-            || name.contains("WezTerm")
-        {
-            // Extract just the app name
-            app_name = if name.contains("Terminal") {
-                "Terminal".to_string()
-            } else if name.contains("iTerm") {
-                "iTerm2".to_string()
-            } else if name.contains("Warp") {
-                "Warp".to_string()
-            } else if name.contains("Alacritty") {
-                "Alacritty".to_string()
-            } else if name.contains("kitty") {
-                "kitty".to_string()
-            } else if name.contains("WezTerm") {
-                "WezTerm".to_string()
-            } else {
-                name.clone()
-            };
+        // Match known terminal apps and IDEs with integrated terminals
+        let known_apps: &[(&str, &str)] = &[
+            ("Terminal", "Terminal"),
+            ("iTerm", "iTerm2"),
+            ("Warp", "Warp"),
+            ("Alacritty", "Alacritty"),
+            ("kitty", "kitty"),
+            ("Hyper", "Hyper"),
+            ("WezTerm", "WezTerm"),
+            ("Code Helper", "Visual Studio Code"),
+            ("Code", "Visual Studio Code"),
+            ("Cursor", "Cursor"),
+            ("Windsurf", "Windsurf"),
+            ("Zed", "Zed"),
+        ];
+
+        let matched = known_apps.iter().find(|(pattern, _)| name.contains(pattern));
+        if let Some((_, display_name)) = matched {
+            app_name = display_name.to_string();
             break;
         }
 
