@@ -11,6 +11,7 @@
       <h2>Session {{ store.selectedSessionId() | slice:0:8 }}</h2>
       <span class="header-meta">{{ stats.model }} | {{ formatDuration(stats.durationMs) }} | {{ formatCost(stats.estimatedCostUsd) }}</span>
       @if (watcher.isWatching()) {
+        <button class="focus-btn" (click)="focusTerminal()">Focus Terminal</button>
         <button class="watch-btn watching" (click)="watcher.stopWatching()">Stop Watching</button>
       } @else {
         <button class="watch-btn" (click)="watcher.startWatching(store.selectedProject()!, store.selectedSessionId()!)">Watch Live</button>

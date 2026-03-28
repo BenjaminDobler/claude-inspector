@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { SessionStoreService, WatcherService, ActiveSessionInfo } from '@claude-inspector/data-access';
+import { SessionStoreService, WatcherService, ActiveSessionInfo, TauriBridgeService } from '@claude-inspector/data-access';
 import { ProjectInfo, SessionInfo } from '@claude-inspector/types';
 
 @Component({
@@ -14,6 +14,7 @@ import { ProjectInfo, SessionInfo } from '@claude-inspector/types';
 export class SessionBrowserComponent implements OnInit {
   private store = inject(SessionStoreService);
   private watcher = inject(WatcherService);
+  private bridge = inject(TauriBridgeService);
   private router = inject(Router);
 
   projects = this.store.projects;
@@ -44,6 +45,12 @@ export class SessionBrowserComponent implements OnInit {
     if (session.projectPath && session.sessionId) {
       this.router.navigate(['/session', session.projectPath, session.sessionId]);
     }
+  }
+
+  async focusSession(pid: number) {
+    try {
+      await this.bridge.focusSession(pid);
+    } catch { /* ignore on non-macOS */ }
   }
 
   formatFileSize(bytes: number): string {

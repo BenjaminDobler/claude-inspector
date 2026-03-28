@@ -8,6 +8,7 @@ export interface NotificationRule {
   enabled: boolean;
   sound: boolean;
   systemNotification: boolean;
+  focusTerminal: boolean;
   soundFile: string;
 }
 
@@ -17,6 +18,7 @@ const DEFAULT_RULES: NotificationRule[] = [
     label: 'User Input Needed',
     description: 'When the AI asks a question or needs user input (AskUserQuestion)',
     enabled: true,
+    focusTerminal: true,
     sound: true,
     systemNotification: true,
     soundFile: 'notification',
@@ -28,6 +30,7 @@ const DEFAULT_RULES: NotificationRule[] = [
     enabled: true,
     sound: true,
     systemNotification: false,
+    focusTerminal: false,
     soundFile: 'error',
   },
   {
@@ -37,6 +40,7 @@ const DEFAULT_RULES: NotificationRule[] = [
     enabled: false,
     sound: false,
     systemNotification: false,
+    focusTerminal: false,
     soundFile: 'notification',
   },
   {
@@ -46,6 +50,7 @@ const DEFAULT_RULES: NotificationRule[] = [
     enabled: false,
     sound: false,
     systemNotification: false,
+    focusTerminal: false,
     soundFile: 'notification',
   },
   {
@@ -55,6 +60,7 @@ const DEFAULT_RULES: NotificationRule[] = [
     enabled: false,
     sound: false,
     systemNotification: false,
+    focusTerminal: false,
     soundFile: 'notification',
   },
   {
@@ -64,6 +70,7 @@ const DEFAULT_RULES: NotificationRule[] = [
     enabled: false,
     sound: true,
     systemNotification: true,
+    focusTerminal: false,
     soundFile: 'complete',
   },
 ];
@@ -107,14 +114,16 @@ export class NotificationService {
    * Check a new session entry against notification rules.
    * Called by WatcherService when new entries arrive during live monitoring.
    */
-  checkEntry(entry: RawSessionEntry): void {
+  checkEntry(entry: RawSessionEntry): { shouldFocusTerminal: boolean } {
     this.lastActivityTimestamp = Date.now();
     const rules = this.rules();
+    let shouldFocusTerminal = false;
 
     // Check for AskUserQuestion
     const askRule = rules.find((r) => r.id === 'user_input_needed');
     if (askRule?.enabled && this.isAskUserQuestion(entry)) {
       this.fire(askRule, 'User Input Needed', 'The AI is waiting for your input');
+      if (askRule.focusTerminal) shouldFocusTerminal = true;
     }
 
     // Check for tool errors
@@ -142,6 +151,8 @@ export class NotificationService {
     if (planRule?.enabled && this.isPlanModeChange(entry)) {
       this.fire(planRule, 'Plan Mode', 'Plan mode state changed');
     }
+
+    return { shouldFocusTerminal };
   }
 
   startIdleWatch(): void {

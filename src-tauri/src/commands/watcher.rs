@@ -107,6 +107,98 @@ pub fn get_active_sessions() -> Result<Vec<ActiveSessionInfo>, String> {
     Ok(active)
 }
 
+#[cfg(target_os = "macos")]
+#[command]
+pub fn focus_session(pid: u32) -> Result<String, String> {
+    use std::process::Command;
+
+    // Find the parent terminal process (Terminal.app, iTerm2, Warp, etc.)
+    // Walk up the process tree to find the terminal app
+    let output = Command::new("ps")
+        .args(["-o", "ppid=", "-p", &pid.to_string()])
+        .output()
+        .map_err(|e| format!("Failed to get parent PID: {}", e))?;
+
+    let ppid_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let ppid: u32 = ppid_str.parse().unwrap_or(0);
+
+    // Walk up to find the terminal application
+    let mut current_pid = ppid;
+    let mut app_name = String::new();
+
+    for _ in 0..10 {
+        // Get the process name
+        let name_output = Command::new("ps")
+            .args(["-o", "comm=", "-p", &current_pid.to_string()])
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        let name = String::from_utf8_lossy(&name_output.stdout).trim().to_string();
+
+        if name.contains("Terminal") || name.contains("iTerm") || name.contains("Warp")
+            || name.contains("Alacritty") || name.contains("kitty") || name.contains("Hyper")
+            || name.contains("WezTerm")
+        {
+            // Extract just the app name
+            app_name = if name.contains("Terminal") {
+                "Terminal".to_string()
+            } else if name.contains("iTerm") {
+                "iTerm2".to_string()
+            } else if name.contains("Warp") {
+                "Warp".to_string()
+            } else if name.contains("Alacritty") {
+                "Alacritty".to_string()
+            } else if name.contains("kitty") {
+                "kitty".to_string()
+            } else if name.contains("WezTerm") {
+                "WezTerm".to_string()
+            } else {
+                name.clone()
+            };
+            break;
+        }
+
+        // Get parent of current
+        let parent_output = Command::new("ps")
+            .args(["-o", "ppid=", "-p", &current_pid.to_string()])
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        let next_pid: u32 = String::from_utf8_lossy(&parent_output.stdout)
+            .trim()
+            .parse()
+            .unwrap_or(0);
+
+        if next_pid == 0 || next_pid == 1 || next_pid == current_pid {
+            break;
+        }
+        current_pid = next_pid;
+    }
+
+    if app_name.is_empty() {
+        return Err("Could not find terminal application for this session".to_string());
+    }
+
+    // Use AppleScript to activate the terminal app
+    let script = format!(
+        r#"tell application "{}" to activate"#,
+        app_name
+    );
+
+    Command::new("osascript")
+        .args(["-e", &script])
+        .output()
+        .map_err(|e| format!("Failed to activate {}: {}", app_name, e))?;
+
+    Ok(format!("Focused {}", app_name))
+}
+
+#[cfg(not(target_os = "macos"))]
+#[command]
+pub fn focus_session(_pid: u32) -> Result<String, String> {
+    Err("Focus session is only supported on macOS".to_string())
+}
+
 #[command]
 pub fn poll_session(
     project_path: String,

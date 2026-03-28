@@ -19,6 +19,7 @@ pub fn run() {
             commands::sessions::read_session,
             commands::sessions::read_session_plans,
             commands::watcher::get_active_sessions,
+            commands::watcher::focus_session,
             commands::watcher::poll_session,
             commands::config::read_global_config,
             commands::config::write_global_settings,

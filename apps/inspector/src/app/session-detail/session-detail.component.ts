@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { SessionStoreService, WatcherService } from '@claude-inspector/data-access';
+import { SessionStoreService, WatcherService, TauriBridgeService } from '@claude-inspector/data-access';
 import { TimelineComponent } from '../timeline/timeline.component';
 import { TokenChartComponent } from '../token-chart/token-chart.component';
 import { ToolStatsComponent } from '../tool-stats/tool-stats.component';
@@ -37,6 +37,7 @@ type Tab = 'overview' | 'timeline' | 'tokens' | 'tools' | 'tree' | 'replay' | 's
 })
 export class SessionDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private bridge = inject(TauriBridgeService);
   store = inject(SessionStoreService);
   watcher = inject(WatcherService);
   activeTab = signal<Tab>('overview');
@@ -78,6 +79,17 @@ export class SessionDetailComponent implements OnInit {
     a.download = `session-${this.store.selectedSessionId()?.slice(0, 8)}-report.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async focusTerminal() {
+    const sessionId = this.store.selectedSessionId();
+    const activeSessions = this.watcher.activeSessions();
+    const active = activeSessions.find(s => s.sessionId === sessionId);
+    if (active) {
+      try {
+        await this.bridge.focusSession(active.pid);
+      } catch { /* ignore on non-macOS */ }
+    }
   }
 
   formatDuration(ms: number): string {

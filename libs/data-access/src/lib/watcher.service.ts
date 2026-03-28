@@ -78,8 +78,18 @@ export class WatcherService implements OnDestroy {
         const newParsed = parseSessionEntries(result.newEntries);
 
         // Check each new entry against notification rules
+        let needsFocus = false;
         for (const entry of newParsed) {
-          this.notifications.checkEntry(entry);
+          const result2 = this.notifications.checkEntry(entry);
+          if (result2.shouldFocusTerminal) needsFocus = true;
+        }
+
+        // Auto-focus terminal if triggered
+        if (needsFocus) {
+          const active = this.activeSessions().find(s => s.sessionId === this.watchingSession);
+          if (active) {
+            this.tauriBridge.focusSession(active.pid).catch(() => { /* ignore */ });
+          }
         }
 
         const existing = this.sessionStore.rawEntries();

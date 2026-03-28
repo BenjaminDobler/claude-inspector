@@ -61,6 +61,15 @@
                 <span class="warning">Requires permission</span>
               }
             </div>
+
+            <div class="option-row">
+              <label class="option-label">
+                <button class="checkbox" [class.checked]="rule.focusTerminal" (click)="toggleFocusTerminal(rule)">
+                  {{ rule.focusTerminal ? 'x' : '' }}
+                </button>
+                Focus terminal window (macOS)
+              </label>
+            </div>
           </div>
         }
       </div>

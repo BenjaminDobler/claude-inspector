@@ -32,16 +32,19 @@
       </div>
       <div class="active-list">
         @for (active of activeSessions(); track active.sessionId) {
-          <button class="session-card active-card" (click)="watchActiveSession(active)">
-            <div class="session-id">
-              {{ active.sessionId | slice:0:8 }}...
-              <span class="live-badge">LIVE</span>
-            </div>
-            <div class="session-meta">
-              <span class="meta-item">PID {{ active.pid }}</span>
-              <span class="meta-item">{{ active.cwd }}</span>
-            </div>
-          </button>
+          <div class="session-card active-card">
+            <button class="active-card-main" (click)="watchActiveSession(active)">
+              <div class="session-id">
+                {{ active.sessionId | slice:0:8 }}...
+                <span class="live-badge">LIVE</span>
+              </div>
+              <div class="session-meta">
+                <span class="meta-item">PID {{ active.pid }}</span>
+                <span class="meta-item">{{ active.cwd }}</span>
+              </div>
+            </button>
+            <button class="focus-btn" (click)="focusSession(active.pid); $event.stopPropagation()" title="Focus terminal window">Focus</button>
+          </div>
         }
       </div>
     }

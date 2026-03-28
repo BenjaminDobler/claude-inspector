@@ -32,6 +32,10 @@ export class SettingsComponent {
     this.notificationService.updateRule(rule.id, { systemNotification: !rule.systemNotification });
   }
 
+  toggleFocusTerminal(rule: NotificationRule): void {
+    this.notificationService.updateRule(rule.id, { focusTerminal: !rule.focusTerminal });
+  }
+
   setSoundFile(rule: NotificationRule, event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.notificationService.updateRule(rule.id, { soundFile: value });

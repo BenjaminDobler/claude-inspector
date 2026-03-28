@@ -127,6 +127,39 @@
   }
 }
 
+.active-card-main {
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  padding: 0;
+}
+
+.active-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.focus-btn {
+  padding: 5px 12px;
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(88, 166, 255, 0.15);
+  }
+}
+
 .live-badge {
   display: inline-block;
   font-size: 9px;

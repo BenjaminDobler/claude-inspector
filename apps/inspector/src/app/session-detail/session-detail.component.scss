@@ -47,6 +47,23 @@
   font-family: var(--font-mono);
 }
 
+.focus-btn {
+  padding: 7px 14px;
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(88, 166, 255, 0.15);
+  }
+}
+
 .watch-btn {
   padding: 7px 16px;
   background: var(--bg-raised);
