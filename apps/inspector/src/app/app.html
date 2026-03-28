@@ -1,14 +1,43 @@
 <div class="app-shell">
-  <header class="app-header">
-    <a class="app-title" routerLink="/">Claude Inspector</a>
-    <nav class="header-nav">
-      <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-      <a class="nav-link" routerLink="/costs" routerLinkActive="active">Costs</a>
-      <a class="nav-link" routerLink="/mcp" routerLinkActive="active">MCP</a>
-      <a class="nav-link" routerLink="/config" routerLinkActive="active">Plugins</a>
-      <a class="nav-link" routerLink="/settings" routerLinkActive="active">Notifications</a>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-dot"></span>
+      <a class="brand-name" routerLink="/">Claude Inspector</a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <span class="nav-group-label">Overview</span>
+        <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+          <span class="nav-icon">&#9670;</span> Dashboard
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <span class="nav-group-label">Monitor</span>
+        <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <span class="nav-icon">&#9673;</span> Sessions
+        </a>
+        <a class="nav-item" routerLink="/costs" routerLinkActive="active">
+          <span class="nav-icon">&#9679;</span> Costs
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <span class="nav-group-label">Config</span>
+        <a class="nav-item" routerLink="/config" routerLinkActive="active">
+          <span class="nav-icon">&#9889;</span> Plugins
+        </a>
+        <a class="nav-item" routerLink="/mcp" routerLinkActive="active">
+          <span class="nav-icon">&#9881;</span> MCP Servers
+        </a>
+        <a class="nav-item" routerLink="/settings" routerLinkActive="active">
+          <span class="nav-icon">&#9838;</span> Notifications
+        </a>
+      </div>
     </nav>
-  </header>
+  </aside>
+
   <main class="app-content">
     <router-outlet></router-outlet>
   </main>

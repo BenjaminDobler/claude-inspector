@@ -299,6 +299,144 @@ pub fn read_global_history(limit: Option<usize>) -> Result<Vec<HistoryEntry>, St
     Ok(entries)
 }
 
+// ─── Hourly activity (When You Work) ───
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HourlyActivity {
+    pub hour: u32,
+    pub count: u64,
+}
+
+#[command]
+pub fn read_hourly_activity() -> Result<Vec<HourlyActivity>, String> {
+    let history_path = claude_dir()
+        .ok_or("Could not find home directory")?
+        .join("history.jsonl");
+
+    if !history_path.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut hours = vec![0u64; 24];
+
+    let file = fs::File::open(&history_path).map_err(|e| e.to_string())?;
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line.map_err(|e| e.to_string())?;
+        let trimmed = line.trim();
+        if trimmed.is_empty() { continue; }
+
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
+            if let Some(ts) = val.get("timestamp").and_then(|v| v.as_u64()) {
+                // Convert epoch ms to hour of day
+                let secs = ts / 1000;
+                let hour = ((secs % 86400) / 3600) as usize;
+                if hour < 24 {
+                    hours[hour] += 1;
+                }
+            }
+        }
+    }
+
+    Ok(hours.iter().enumerate().map(|(h, &count)| HourlyActivity {
+        hour: h as u32,
+        count,
+    }).collect())
+}
+
+// ─── Cross-session tool stats ───
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalToolStat {
+    pub name: String,
+    pub count: u64,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolSequence {
+    pub from_tool: String,
+    pub to_tool: String,
+    pub count: u64,
+}
+
+#[command]
+pub fn read_global_tool_stats() -> Result<(Vec<GlobalToolStat>, Vec<ToolSequence>), String> {
+    let projects_dir = claude_dir()
+        .ok_or("Could not find home directory")?
+        .join("projects");
+
+    if !projects_dir.exists() {
+        return Ok((vec![], vec![]));
+    }
+
+    let mut tool_counts: HashMap<String, u64> = HashMap::new();
+    let mut sequences: HashMap<(String, String), u64> = HashMap::new();
+
+    // Scan all session files
+    let project_entries = fs::read_dir(&projects_dir).map_err(|e| e.to_string())?;
+    for proj in project_entries.flatten() {
+        let proj_path = proj.path();
+        if !proj_path.is_dir() { continue; }
+
+        if let Ok(sessions) = fs::read_dir(&proj_path) {
+            for session_entry in sessions.flatten() {
+                let path = session_entry.path();
+                if path.extension().map(|e| e == "jsonl").unwrap_or(false) {
+                    if let Ok(file) = fs::File::open(&path) {
+                        let reader = BufReader::new(file);
+                        let mut last_tool: Option<String> = None;
+
+                        for line in reader.lines().flatten() {
+                            let trimmed = line.trim();
+                            if trimmed.is_empty() { continue; }
+
+                            if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                                // Look for tool_use in content
+                                if let Some(content) = val.get("message")
+                                    .and_then(|m| m.get("content"))
+                                    .and_then(|c| c.as_array())
+                                {
+                                    for block in content {
+                                        if block.get("type").and_then(|t| t.as_str()) == Some("tool_use") {
+                                            if let Some(name) = block.get("name").and_then(|n| n.as_str()) {
+                                                *tool_counts.entry(name.to_string()).or_default() += 1;
+
+                                                if let Some(ref prev) = last_tool {
+                                                    *sequences.entry((prev.clone(), name.to_string())).or_default() += 1;
+                                                }
+                                                last_tool = Some(name.to_string());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut tools: Vec<GlobalToolStat> = tool_counts
+        .into_iter()
+        .map(|(name, count)| GlobalToolStat { name, count })
+        .collect();
+    tools.sort_by(|a, b| b.count.cmp(&a.count));
+
+    let mut seqs: Vec<ToolSequence> = sequences
+        .into_iter()
+        .map(|((from, to), count)| ToolSequence { from_tool: from, to_tool: to, count })
+        .collect();
+    seqs.sort_by(|a, b| b.count.cmp(&a.count));
+    seqs.truncate(10);
+
+    Ok((tools, seqs))
+}
+
 // ─── Memory ───
 
 #[derive(Serialize, Clone)]

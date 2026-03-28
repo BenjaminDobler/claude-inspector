@@ -34,6 +34,8 @@ pub fn run() {
             commands::data::read_usage_stats,
             commands::data::read_file_history,
             commands::data::read_global_history,
+            commands::data::read_hourly_activity,
+            commands::data::read_global_tool_stats,
             commands::data::read_project_memory,
             commands::mcp::list_mcp_servers,
             commands::mcp::add_mcp_server,

@@ -93,6 +93,14 @@ export class TauriBridgeService {
     return invoke<FileHistoryEntry[]>('read_file_history', { sessionId });
   }
 
+  async readHourlyActivity(): Promise<{ hour: number; count: number }[]> {
+    return invoke<{ hour: number; count: number }[]>('read_hourly_activity');
+  }
+
+  async readGlobalToolStats(): Promise<[GlobalToolStat[], ToolSequence[]]> {
+    return invoke<[GlobalToolStat[], ToolSequence[]]>('read_global_tool_stats');
+  }
+
   async readGlobalHistory(limit?: number): Promise<HistoryEntry[]> {
     return invoke<HistoryEntry[]>('read_global_history', { limit: limit || 500 });
   }
@@ -239,6 +247,17 @@ export interface HistoryEntry {
 export interface MemoryFile {
   filename: string;
   content: string;
+}
+
+export interface GlobalToolStat {
+  name: string;
+  count: number;
+}
+
+export interface ToolSequence {
+  fromTool: string;
+  toTool: string;
+  count: number;
 }
 
 export interface PlanFile {

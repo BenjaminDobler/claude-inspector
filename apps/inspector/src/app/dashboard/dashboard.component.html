@@ -1,56 +1,105 @@
 <div class="dashboard-container">
-  <div class="dashboard-header">
-    <h2>Usage Dashboard</h2>
-  </div>
-
   @if (!loading()) {
-    <!-- Summary -->
-    <div class="summary-grid">
+    <!-- Greeting -->
+    <div class="greeting">
+      <h1>{{ getGreeting() }} <span class="greeting-dot"></span></h1>
+      <p class="greeting-sub">{{ projectCount() }} projects, {{ formatNumber(totalSessions()) }} sessions, {{ formatNumber(totalMessages()) }} messages total.</p>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-row">
       <div class="summary-card">
-        <span class="summary-label">Total Messages</span>
-        <span class="summary-value">{{ formatNumber(totalMessages()) }}</span>
+        <span class="summary-value">{{ projectCount() }}</span>
+        <span class="summary-label"><span class="dot blue"></span> Projects</span>
       </div>
       <div class="summary-card">
-        <span class="summary-label">Sessions</span>
         <span class="summary-value">{{ formatNumber(totalSessions()) }}</span>
+        <span class="summary-label"><span class="dot green"></span> Sessions</span>
       </div>
       <div class="summary-card">
-        <span class="summary-label">Tool Calls</span>
-        <span class="summary-value">{{ formatNumber(totalToolCalls()) }}</span>
+        <span class="summary-value">{{ formatNumber(totalMessages()) }}</span>
+        <span class="summary-label"><span class="dot yellow"></span> Messages</span>
       </div>
       <div class="summary-card">
-        <span class="summary-label">Active Days</span>
-        <span class="summary-value">{{ activeDays() }}</span>
+        <span class="summary-value">{{ formatCost(totalCost()) }}</span>
+        <span class="summary-label"><span class="dot purple"></span> Est. Cost</span>
       </div>
     </div>
 
-    <!-- Activity chart (simple bar chart) -->
-    <div class="activity-section">
-      <h3>Last 14 Days</h3>
-      <div class="activity-bars">
-        @for (day of recentStats(); track day.date) {
-          <div class="bar-group" [title]="day.date + ': ' + day.messageCount + ' messages'">
-            <div class="bar" [style.height.%]="(day.messageCount / maxMessages()) * 100"></div>
-            <span class="bar-label">{{ day.date.slice(5) }}</span>
-          </div>
-        }
+    <!-- Activity + When You Work -->
+    <div class="two-col">
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Activity <span class="widget-meta">{{ recentStats().length }}d</span></span>
+        </div>
+        <div class="activity-bars">
+          @for (day of recentStats(); track day.date) {
+            <div class="bar-col" [title]="day.date + ': ' + day.messageCount + ' messages'">
+              <div class="bar" [style.height.%]="(day.messageCount / maxMessages()) * 100"></div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">When You Work</span>
+        </div>
+        <div class="hourly-chart">
+          @for (h of hourly(); track h.hour) {
+            <div class="hour-col" [title]="getHourLabel(h.hour) + ': ' + h.count + ' messages'">
+              <div class="hour-bar" [style.height.%]="(h.count / maxHourly()) * 100"
+                   [style.background]="hourColor(h.count)"></div>
+              @if (h.hour % 6 === 0) {
+                <span class="hour-label">{{ getHourLabel(h.hour) }}</span>
+              }
+            </div>
+          }
+        </div>
       </div>
     </div>
 
-    <!-- Recent history -->
-    <div class="history-section">
-      <h3>Recent Prompts</h3>
-      <div class="history-list">
-        @for (entry of history(); track entry.timestamp) {
-          <div class="history-item">
-            <span class="history-project">{{ getProjectName(entry.project) }}</span>
-            <span class="history-text">{{ entry.display | slice:0:120 }}</span>
-            <span class="history-time">{{ formatDate(entry.timestamp) }}</span>
-          </div>
-        }
+    <!-- Cost by Model + Recent Sessions -->
+    <div class="two-col">
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Cost by Model</span>
+        </div>
+        <div class="model-bars">
+          @for (m of modelCosts(); track m.model) {
+            <div class="model-row">
+              <span class="model-name">{{ m.model }}</span>
+              <div class="model-bar-track">
+                <div class="model-bar-fill" [style.width.%]="(m.cost / maxModelCost()) * 100"
+                     [class.opus]="m.model.includes('opus')"
+                     [class.sonnet]="m.model.includes('sonnet')"
+                     [class.haiku]="m.model.includes('haiku')"></div>
+              </div>
+              <span class="model-cost">{{ formatCost(m.cost) }}</span>
+            </div>
+          }
+          <div class="model-total">Total: {{ formatCost(totalCost()) }}</div>
+        </div>
+      </div>
+
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Recent Sessions</span>
+        </div>
+        <div class="recent-list">
+          @for (entry of history(); track entry.timestamp) {
+            <div class="recent-item">
+              <span class="recent-text">{{ entry.display | slice:0:80 }}</span>
+              <div class="recent-meta">
+                <span class="recent-project">{{ getProjectName(entry.project) }}</span>
+                <span class="recent-time">{{ formatDate(entry.timestamp) }}</span>
+              </div>
+            </div>
+          }
+        </div>
       </div>
     </div>
   } @else {
-    <div class="loading">Loading...</div>
+    <div class="loading">Loading dashboard...</div>
   }
 </div>
