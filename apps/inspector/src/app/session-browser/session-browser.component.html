@@ -59,10 +59,19 @@
             [class.selected]="selectedSessionId() === session.sessionId"
             (click)="selectSession(session)"
           >
-            <div class="session-id">{{ session.sessionId | slice:0:8 }}...</div>
+            <div class="session-card-top">
+              <span class="session-id">{{ session.sessionId | slice:0:8 }}</span>
+              @if (session.model) {
+                <span class="model-badge">{{ getModelShort(session.model) }}</span>
+              }
+              <span class="session-time">{{ formatDate(session.modifiedAt) }}</span>
+            </div>
+            @if (session.firstMessage) {
+              <div class="session-preview">{{ session.firstMessage }}</div>
+            }
             <div class="session-meta">
+              <span class="meta-item">{{ session.messageCount }} msgs</span>
               <span class="meta-item">{{ formatFileSize(session.fileSize) }}</span>
-              <span class="meta-item">{{ formatDate(session.modifiedAt) }}</span>
               @if (session.hasSubagents) {
                 <span class="meta-badge">{{ session.subagentCount }} agents</span>
               }

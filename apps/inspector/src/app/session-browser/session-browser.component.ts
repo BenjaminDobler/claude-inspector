@@ -64,6 +64,10 @@ export class SessionBrowserComponent implements OnInit {
     return date.toLocaleString();
   }
 
+  getModelShort(model: string): string {
+    return model.replace('claude-', '').replace(/-\d{8}$/, '');
+  }
+
   getProjectName(displayPath: string): string {
     const parts = displayPath.split('/').filter(Boolean);
     return parts[parts.length - 1] || displayPath;

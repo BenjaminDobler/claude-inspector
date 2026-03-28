@@ -1,0 +1,64 @@
+<div class="tools-container">
+  @if (!loading()) {
+    <div class="page-header">
+      <h1>Tools</h1>
+      <p class="page-sub">{{ formatNumber(totalCalls()) }} total calls across {{ toolCount() }} tools.</p>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <span class="summary-value">{{ formatNumber(totalCalls()) }}</span>
+        <span class="summary-label"><span class="dot blue"></span> Total Calls</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value">{{ toolCount() }}</span>
+        <span class="summary-label"><span class="dot green"></span> Tools Used</span>
+      </div>
+    </div>
+
+    <!-- Tool Distribution -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Tool Distribution</span>
+        <span class="section-meta">{{ toolCount() }} tools</span>
+      </div>
+      <div class="section-body">
+        @for (tool of tools(); track tool.name) {
+          <div class="hbar-row">
+            <span class="hbar-label">{{ tool.name }}</span>
+            <div class="hbar-track">
+              <div class="hbar-fill" [style.width.%]="(tool.count / maxToolCount()) * 100"
+                   [style.background]="getToolColor(tool.name)"></div>
+            </div>
+            <span class="hbar-value">{{ formatNumber(tool.count) }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Common Sequences -->
+    @if (sequences().length > 0) {
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Common Sequences</span>
+          <span class="section-meta">{{ sequences().length }} patterns</span>
+        </div>
+        <div class="section-body">
+          @for (seq of sequences(); track seq.fromTool + seq.toTool) {
+            <div class="hbar-row">
+              <span class="hbar-label sequence-label">{{ seq.fromTool }} <span class="arrow">-></span> {{ seq.toTool }}</span>
+              <div class="hbar-track">
+                <div class="hbar-fill" [style.width.%]="(seq.count / maxSeqCount()) * 100"
+                     [style.background]="getToolColor(seq.fromTool)"></div>
+              </div>
+              <span class="hbar-value">{{ formatNumber(seq.count) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  } @else {
+    <div class="loading">Loading tool analytics...</div>
+  }
+</div>

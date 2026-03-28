@@ -25,6 +25,9 @@ pub struct SessionInfo {
     pub modified_at: String,
     pub has_subagents: bool,
     pub subagent_count: usize,
+    pub first_message: String,
+    pub model: String,
+    pub message_count: usize,
 }
 
 #[derive(Serialize, Clone)]
@@ -145,12 +148,71 @@ pub fn list_sessions(project_path: String) -> Result<Vec<SessionInfo>, String> {
                 0
             };
 
+            // Quick scan for first message, model, and count
+            let mut first_message = String::new();
+            let mut model = String::new();
+            let mut message_count: usize = 0;
+
+            if let Ok(file) = fs::File::open(&path) {
+                let reader = BufReader::new(file);
+                for line in reader.lines().take(200) {
+                    if let Ok(line) = line {
+                        let trimmed = line.trim();
+                        if trimmed.is_empty() { continue; }
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                            // Count user/assistant messages
+                            if let Some(msg) = val.get("message") {
+                                if msg.get("role").and_then(|r| r.as_str()) == Some("user")
+                                    || msg.get("role").and_then(|r| r.as_str()) == Some("assistant")
+                                {
+                                    message_count += 1;
+                                }
+                            }
+
+                            // Get first user message text
+                            if first_message.is_empty() {
+                                if let Some(msg) = val.get("message") {
+                                    if msg.get("role").and_then(|r| r.as_str()) == Some("user") {
+                                        if let Some(content) = msg.get("content") {
+                                            if let Some(text) = content.as_str() {
+                                                first_message = text.chars().take(120).collect();
+                                            } else if let Some(arr) = content.as_array() {
+                                                for block in arr {
+                                                    if block.get("type").and_then(|t| t.as_str()) == Some("text") {
+                                                        if let Some(t) = block.get("text").and_then(|t| t.as_str()) {
+                                                            first_message = t.chars().take(120).collect();
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Get model from first assistant message
+                            if model.is_empty() {
+                                if let Some(msg) = val.get("message") {
+                                    if let Some(m) = msg.get("model").and_then(|m| m.as_str()) {
+                                        model = m.to_string();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             sessions.push(SessionInfo {
                 session_id,
                 file_size,
                 modified_at,
                 has_subagents,
                 subagent_count,
+                first_message,
+                model,
+                message_count,
             });
         }
     }

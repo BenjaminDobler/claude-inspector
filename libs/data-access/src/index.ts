@@ -14,6 +14,8 @@ export {
   type HistoryEntry,
   type MemoryFile,
   type McpServerInfo,
+  type GlobalToolStat,
+  type ToolSequence,
 } from './lib/tauri-bridge.service';
 export { SessionStoreService } from './lib/session-store.service';
 export { WatcherService } from './lib/watcher.service';

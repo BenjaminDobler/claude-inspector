@@ -23,6 +23,13 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'tools',
+    loadComponent: () =>
+      import('./tools-page/tools-page.component').then(
+        (m) => m.ToolsPageComponent
+      ),
+  },
+  {
     path: 'costs',
     loadComponent: () =>
       import('./cost-dashboard/cost-dashboard.component').then(

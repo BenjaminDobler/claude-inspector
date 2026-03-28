@@ -14,6 +14,9 @@ export interface SessionInfo {
   modifiedAt: string;
   hasSubagents: boolean;
   subagentCount: number;
+  firstMessage: string;
+  model: string;
+  messageCount: number;
 }
 
 export interface RawSessionData {
