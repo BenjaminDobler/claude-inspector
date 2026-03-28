@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { TauriBridgeService, DailyActivity, HistoryEntry, CostData, HygieneIssue } from '@claude-inspector/data-access';
+import { TauriBridgeService, HistoryEntry, HygieneIssue, FullDayStats } from '@claude-inspector/data-access';
 
 @Component({
   selector: 'app-dashboard',
@@ -13,10 +13,9 @@ import { TauriBridgeService, DailyActivity, HistoryEntry, CostData, HygieneIssue
 export class DashboardComponent implements OnInit {
   private bridge = inject(TauriBridgeService);
 
-  stats = signal<DailyActivity[]>([]);
+  fullStats = signal<FullDayStats[]>([]);
   history = signal<HistoryEntry[]>([]);
   hourly = signal<{ hour: number; count: number }[]>([]);
-  costData = signal<CostData | null>(null);
   loading = signal(true);
 
   totalMessages = signal(0);
@@ -46,83 +45,95 @@ export class DashboardComponent implements OnInit {
 
   async loadData() {
     try {
-      const [stats, history, hourly, costData, projects, hygieneIssues] = await Promise.all([
-        this.bridge.readUsageStats().catch(() => []),
+      const [fullStats, history, hourly, projects, hygieneIssues] = await Promise.all([
+        this.bridge.computeFullStats().catch(() => []),
         this.bridge.readGlobalHistory(20).catch(() => []),
         this.bridge.readHourlyActivity().catch(() => []),
-        this.bridge.readCostData().catch(() => null),
         this.bridge.listProjects().catch(() => []),
         this.bridge.checkHygiene().catch(() => []),
       ]);
 
-      this.stats.set(stats);
+      this.fullStats.set(fullStats);
       this.history.set(history);
       this.hourly.set(hourly);
-      this.costData.set(costData);
       this.projectCount.set(projects.length);
 
-      this.totalMessages.set(stats.reduce((s, d) => s + d.messageCount, 0));
-      this.totalSessions.set(stats.reduce((s, d) => s + d.sessionCount, 0));
-      this.totalToolCalls.set(stats.reduce((s, d) => s + d.toolCallCount, 0));
-      this.activeDays.set(stats.length);
+      this.totalMessages.set(fullStats.reduce((s, d) => s + d.messageCount, 0));
+      this.totalToolCalls.set(fullStats.reduce((s, d) => s + d.toolCallCount, 0));
+      this.activeDays.set(fullStats.length);
+      // Session count from projects
+      this.totalSessions.set(projects.reduce((s, p) => s + p.sessionCount, 0));
 
-      // Calculate total cost and per-model costs
-      if (costData) {
-        const modelMap = new Map<string, number>();
-        for (const [, models] of Object.entries(costData.days)) {
-          for (const [model, usage] of Object.entries(models)) {
-            const prices = costData.pricing[model] || { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 };
-            const cost =
-              (usage.input / 1_000_000) * prices.input +
-              (usage.output / 1_000_000) * prices.output +
-              (usage.cacheRead / 1_000_000) * prices.cacheRead +
-              (usage.cacheWrite / 1_000_000) * prices.cacheWrite;
-            modelMap.set(model, (modelMap.get(model) || 0) + cost);
-          }
-        }
-        const total = Array.from(modelMap.values()).reduce((a, b) => a + b, 0);
-        this.totalCost.set(total);
+      // Pricing table (per million tokens)
+      const pricing: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+        'claude-opus-4-6': { input: 15, output: 75, cacheRead: 1.5, cacheWrite: 18.75 },
+        'claude-opus-4-5-20251101': { input: 15, output: 75, cacheRead: 1.5, cacheWrite: 18.75 },
+        'claude-sonnet-4-6': { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
+        'claude-sonnet-4-5-20251022': { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
+        'claude-haiku-4-5-20251001': { input: 0.8, output: 4, cacheRead: 0.08, cacheWrite: 1 },
+      };
+      const defaultPricing = { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 };
 
-        const sorted = Array.from(modelMap.entries())
-          .map(([model, cost]) => ({ model: this.shortModel(model), cost }))
-          .sort((a, b) => b.cost - a.cost);
-        this.modelCosts.set(sorted);
+      // Calculate cost per day and per model from full stats
+      const modelCostMap = new Map<string, number>();
+      const now = new Date();
+      const thisMonthStr = now.toISOString().slice(0, 7);
+      const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthStr = lastMonthDate.toISOString().slice(0, 7);
+      let thisMonth = 0;
+      let lastMonth = 0;
 
-        // Cost projections
-        const now = new Date();
-        const dayOfMonth = now.getDate();
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const thisMonthStr = now.toISOString().slice(0, 7); // "2026-03"
-        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthStr = lastMonthDate.toISOString().slice(0, 7);
-
-        let thisMonth = 0;
-        let lastMonth = 0;
-        for (const [date, models] of Object.entries(costData.days)) {
-          let dayCost = 0;
-          for (const [model, usage] of Object.entries(models)) {
-            const prices = costData.pricing[model] || { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 };
-            dayCost += (usage.input / 1e6) * prices.input + (usage.output / 1e6) * prices.output +
-              (usage.cacheRead / 1e6) * prices.cacheRead + (usage.cacheWrite / 1e6) * prices.cacheWrite;
-          }
-          if (date.startsWith(thisMonthStr)) thisMonth += dayCost;
-          if (date.startsWith(lastMonthStr)) lastMonth += dayCost;
+      for (const day of fullStats) {
+        // Find dominant model for this day to price tokens
+        let bestModel = '';
+        let bestCount = 0;
+        for (const [model, count] of Object.entries(day.models)) {
+          if (count > bestCount) { bestModel = model; bestCount = count; }
         }
 
-        this.thisMonthCost.set(thisMonth);
-        this.projectedMonthCost.set(dayOfMonth > 0 ? (thisMonth / dayOfMonth) * daysInMonth : 0);
-        this.lastMonthCost.set(lastMonth);
-        this.monthTrend.set(lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0);
+        const prices = pricing[bestModel] || defaultPricing;
+        const dayCost =
+          (day.inputTokens / 1e6) * prices.input +
+          (day.outputTokens / 1e6) * prices.output +
+          (day.cacheReadTokens / 1e6) * prices.cacheRead +
+          (day.cacheWriteTokens / 1e6) * prices.cacheWrite;
 
-        // Optimization ideas
-        if (sorted.length > 0) {
-          const topCost = sorted[0].cost;
-          this.topModel.set(sorted[0].model);
-          this.topModelPct.set(total > 0 ? (topCost / total) * 100 : 0);
-          // If top model is Opus and accounts for >70%, suggest Sonnet
-          if (sorted[0].model.includes('opus') && this.topModelPct() > 70) {
-            this.optimizationSavings.set(topCost * 0.8); // Sonnet is ~80% cheaper
-          }
+        // Track model costs
+        for (const [model, count] of Object.entries(day.models)) {
+          const mp = pricing[model] || defaultPricing;
+          // Approximate: distribute day's tokens proportionally by model message count
+          const totalMsgs = Object.values(day.models).reduce((a, b) => a + b, 0);
+          const ratio = totalMsgs > 0 ? count / totalMsgs : 0;
+          const modelDayCost = dayCost * ratio;
+          modelCostMap.set(model, (modelCostMap.get(model) || 0) + modelDayCost);
+        }
+
+        if (day.date.startsWith(thisMonthStr)) thisMonth += dayCost;
+        if (day.date.startsWith(lastMonthStr)) lastMonth += dayCost;
+      }
+
+      const total = Array.from(modelCostMap.values()).reduce((a, b) => a + b, 0);
+      this.totalCost.set(total);
+
+      const sorted = Array.from(modelCostMap.entries())
+        .map(([model, cost]) => ({ model: this.shortModel(model), cost }))
+        .sort((a, b) => b.cost - a.cost);
+      this.modelCosts.set(sorted);
+
+      // Cost projections
+      const dayOfMonth = now.getDate();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      this.thisMonthCost.set(thisMonth);
+      this.projectedMonthCost.set(dayOfMonth > 0 ? (thisMonth / dayOfMonth) * daysInMonth : 0);
+      this.lastMonthCost.set(lastMonth);
+      this.monthTrend.set(lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0);
+
+      // Optimization ideas
+      if (sorted.length > 0) {
+        this.topModel.set(sorted[0].model);
+        this.topModelPct.set(total > 0 ? (sorted[0].cost / total) * 100 : 0);
+        if (sorted[0].model.includes('opus') && this.topModelPct() > 70) {
+          this.optimizationSavings.set(sorted[0].cost * 0.8);
         }
       }
 
@@ -172,12 +183,12 @@ export class DashboardComponent implements OnInit {
     return parts[parts.length - 1] || path;
   }
 
-  recentStats(): DailyActivity[] {
-    return this.stats().slice(-30).reverse();
+  recentStats(): FullDayStats[] {
+    return this.fullStats().slice(-30).reverse();
   }
 
   maxMessages(): number {
-    return Math.max(1, ...this.stats().slice(-30).map(s => s.messageCount));
+    return Math.max(1, ...this.fullStats().slice(-30).map(s => s.messageCount));
   }
 
   maxHourly(): number {

@@ -299,6 +299,135 @@ pub fn read_global_history(limit: Option<usize>) -> Result<Vec<HistoryEntry>, St
     Ok(entries)
 }
 
+// ─── Full history stats (computed from all session files) ───
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FullDayStats {
+    pub date: String,
+    pub message_count: u64,
+    pub tool_call_count: u64,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub cache_read_tokens: u64,
+    pub cache_write_tokens: u64,
+    pub models: HashMap<String, u64>,
+}
+
+#[command]
+pub fn compute_full_stats() -> Result<Vec<FullDayStats>, String> {
+    let projects_dir = claude_dir()
+        .ok_or("Could not find home directory")?
+        .join("projects");
+
+    if !projects_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut day_stats: HashMap<String, FullDayStats> = HashMap::new();
+
+    let project_entries = fs::read_dir(&projects_dir).map_err(|e| e.to_string())?;
+    for proj in project_entries.flatten() {
+        if !proj.path().is_dir() { continue; }
+
+        if let Ok(sessions) = fs::read_dir(proj.path()) {
+            for session_entry in sessions.flatten() {
+                let path = session_entry.path();
+                if !path.extension().map(|e| e == "jsonl").unwrap_or(false) { continue; }
+
+                if let Ok(file) = fs::File::open(&path) {
+                    let reader = BufReader::new(file);
+                    for line in reader.lines().flatten() {
+                        let trimmed = line.trim();
+                        if trimmed.is_empty() { continue; }
+
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                            let date = if let Some(ts) = val.get("timestamp") {
+                                if let Some(s) = ts.as_str() {
+                                    s.get(..10).unwrap_or("").to_string()
+                                } else if let Some(n) = ts.as_u64() {
+                                    epoch_to_date(n / 1000)
+                                } else if let Some(n) = ts.as_f64() {
+                                    epoch_to_date(n as u64 / 1000)
+                                } else {
+                                    continue;
+                                }
+                            } else {
+                                continue;
+                            };
+
+                            if date.len() < 10 { continue; }
+
+                            let entry = day_stats.entry(date.clone()).or_insert_with(|| FullDayStats {
+                                date: date.clone(),
+                                message_count: 0, tool_call_count: 0,
+                                input_tokens: 0, output_tokens: 0,
+                                cache_read_tokens: 0, cache_write_tokens: 0,
+                                models: HashMap::new(),
+                            });
+
+                            if let Some(msg) = val.get("message") {
+                                let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
+                                if role == "user" || role == "assistant" {
+                                    entry.message_count += 1;
+                                }
+
+                                if let Some(usage) = msg.get("usage") {
+                                    entry.input_tokens += usage.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
+                                    entry.output_tokens += usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
+                                    entry.cache_read_tokens += usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
+                                    entry.cache_write_tokens += usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
+                                }
+
+                                if let Some(model) = msg.get("model").and_then(|m| m.as_str()) {
+                                    *entry.models.entry(model.to_string()).or_default() += 1;
+                                }
+
+                                if let Some(content) = msg.get("content").and_then(|c| c.as_array()) {
+                                    for block in content {
+                                        if block.get("type").and_then(|t| t.as_str()) == Some("tool_use") {
+                                            entry.tool_call_count += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut result: Vec<FullDayStats> = day_stats.into_values().collect();
+    result.sort_by(|a, b| a.date.cmp(&b.date));
+    Ok(result)
+}
+
+fn epoch_to_date(secs: u64) -> String {
+    let days = secs / 86400;
+    let mut y = 1970i64;
+    let mut remaining = days as i64;
+
+    loop {
+        let leap = y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
+        let diy = if leap { 366 } else { 365 };
+        if remaining < diy { break; }
+        remaining -= diy;
+        y += 1;
+    }
+
+    let leap = y % 4 == 0 && (y % 100 != 0 || y % 400 == 0);
+    let month_days = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let mut m = 1;
+    for &days in &month_days {
+        if remaining < days as i64 { break; }
+        remaining -= days as i64;
+        m += 1;
+    }
+
+    format!("{:04}-{:02}-{:02}", y, m, remaining + 1)
+}
+
 // ─── Hourly activity (When You Work) ───
 
 #[derive(Serialize, Clone)]

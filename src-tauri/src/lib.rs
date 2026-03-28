@@ -30,6 +30,7 @@ pub fn run() {
             commands::config::list_marketplaces,
             commands::config::read_plugin_detail,
             commands::data::read_cost_data,
+            commands::data::compute_full_stats,
             commands::data::read_session_tasks,
             commands::data::read_usage_stats,
             commands::data::read_file_history,

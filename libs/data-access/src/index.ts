@@ -20,6 +20,7 @@ export {
   type ClaudeMdInfo,
   type HygieneIssue,
   type SessionNote,
+  type FullDayStats,
 } from './lib/tauri-bridge.service';
 export { SessionStoreService } from './lib/session-store.service';
 export { WatcherService } from './lib/watcher.service';

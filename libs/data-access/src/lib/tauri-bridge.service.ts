@@ -81,6 +81,10 @@ export class TauriBridgeService {
     return invoke<CostData>('read_cost_data');
   }
 
+  async computeFullStats(): Promise<FullDayStats[]> {
+    return invoke<FullDayStats[]>('compute_full_stats');
+  }
+
   async readSessionTasks(sessionId: string): Promise<TaskItem[]> {
     return invoke<TaskItem[]>('read_session_tasks', { sessionId });
   }
@@ -314,6 +318,17 @@ export interface SessionNote {
   bookmarked: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FullDayStats {
+  date: string;
+  messageCount: number;
+  toolCallCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  models: Record<string, number>;
 }
 
 export interface GlobalToolStat {
