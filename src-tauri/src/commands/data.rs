@@ -315,7 +315,18 @@ pub struct FullDayStats {
 }
 
 #[command]
-pub fn compute_full_stats() -> Result<Vec<FullDayStats>, String> {
+pub fn compute_full_stats(cache: tauri::State<'_, crate::cache::StatsCache>) -> Result<Vec<FullDayStats>, String> {
+    // Return cached data if available
+    if let Some(cached) = cache.get_full_stats() {
+        return Ok(cached);
+    }
+
+    let result = compute_full_stats_inner()?;
+    cache.set_full_stats(result.clone());
+    Ok(result)
+}
+
+fn compute_full_stats_inner() -> Result<Vec<FullDayStats>, String> {
     let projects_dir = claude_dir()
         .ok_or("Could not find home directory")?
         .join("projects");
@@ -493,7 +504,17 @@ pub struct ToolSequence {
 }
 
 #[command]
-pub fn read_global_tool_stats() -> Result<(Vec<GlobalToolStat>, Vec<ToolSequence>), String> {
+pub fn read_global_tool_stats(cache: tauri::State<'_, crate::cache::StatsCache>) -> Result<(Vec<GlobalToolStat>, Vec<ToolSequence>), String> {
+    if let Some(cached) = cache.get_tool_stats() {
+        return Ok(cached);
+    }
+
+    let result = read_global_tool_stats_inner()?;
+    cache.set_tool_stats(result.clone());
+    Ok(result)
+}
+
+fn read_global_tool_stats_inner() -> Result<(Vec<GlobalToolStat>, Vec<ToolSequence>), String> {
     let projects_dir = claude_dir()
         .ok_or("Could not find home directory")?
         .join("projects");
