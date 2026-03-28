@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, AfterViewInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TauriBridgeService, HistoryEntry, HygieneIssue, FullDayStats } from '@claude-inspector/data-access';
@@ -10,7 +10,7 @@ import { TauriBridgeService, HistoryEntry, HygieneIssue, FullDayStats } from '@c
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements AfterViewInit {
   private bridge = inject(TauriBridgeService);
 
   fullStats = signal<FullDayStats[]>([]);
@@ -39,9 +39,13 @@ export class DashboardComponent implements OnInit {
   hygieneIssues = signal<HygieneIssue[]>([]);
   recentlyActive = signal<{ name: string; count: number }[]>([]);
 
-  ngOnInit() {
-    // Defer data loading to next frame so the skeleton renders first
-    setTimeout(() => this.loadData(), 0);
+  ngAfterViewInit() {
+    // Wait for two animation frames to ensure the skeleton is painted
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.loadData();
+      });
+    });
   }
 
   async loadData() {

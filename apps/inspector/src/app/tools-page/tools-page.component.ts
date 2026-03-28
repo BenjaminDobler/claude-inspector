@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, AfterViewInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TauriBridgeService, GlobalToolStat, ToolSequence } from '@claude-inspector/data-access';
 
@@ -9,7 +9,7 @@ import { TauriBridgeService, GlobalToolStat, ToolSequence } from '@claude-inspec
   templateUrl: './tools-page.component.html',
   styleUrl: './tools-page.component.scss',
 })
-export class ToolsPageComponent implements OnInit {
+export class ToolsPageComponent implements AfterViewInit {
   private bridge = inject(TauriBridgeService);
 
   tools = signal<GlobalToolStat[]>([]);
@@ -35,8 +35,12 @@ export class ToolsPageComponent implements OnInit {
     Skill: '#f0883e',
   };
 
-  ngOnInit() {
-    setTimeout(() => this.loadData(), 0);
+  ngAfterViewInit() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.loadData();
+      });
+    });
   }
 
   async loadData() {
