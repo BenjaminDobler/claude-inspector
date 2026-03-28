@@ -87,7 +87,7 @@ export class SessionDetailComponent implements OnInit {
     const active = activeSessions.find(s => s.sessionId === sessionId);
     if (active) {
       try {
-        await this.bridge.focusSession(active.pid);
+        await this.bridge.focusSession(active.pid, active.cwd);
       } catch { /* ignore on non-macOS */ }
     }
   }

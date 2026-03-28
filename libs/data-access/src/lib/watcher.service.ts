@@ -102,13 +102,18 @@ export class WatcherService implements OnDestroy {
 
         if (needsFocus) {
           let pid = this.watchingPid;
+          let cwd: string | undefined;
           if (!pid) {
             const active = this.activeSessions().find(s => s.sessionId === this.watchingSession);
             pid = active?.pid ?? null;
+            cwd = active?.cwd;
             if (pid) this.watchingPid = pid;
+          } else {
+            const active = this.activeSessions().find(s => s.pid === pid);
+            cwd = active?.cwd;
           }
           if (pid) {
-            this.tauriBridge.focusSession(pid).catch(() => { /* ignore */ });
+            this.tauriBridge.focusSession(pid, cwd).catch(() => { /* ignore */ });
           }
         }
 
@@ -166,7 +171,7 @@ export class WatcherService implements OnDestroy {
           }
 
           if (needsFocus && session.pid) {
-            this.tauriBridge.focusSession(session.pid).catch(() => { /* ignore */ });
+            this.tauriBridge.focusSession(session.pid, session.cwd).catch(() => { /* ignore */ });
           }
 
           this.bgLastLines.set(session.sessionId, result.totalLines);

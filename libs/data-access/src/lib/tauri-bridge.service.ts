@@ -109,8 +109,8 @@ export class TauriBridgeService {
     return invoke<ActiveSessionInfo[]>('get_active_sessions');
   }
 
-  async focusSession(pid: number): Promise<string> {
-    return invoke<string>('focus_session', { pid });
+  async focusSession(pid: number, cwd?: string): Promise<string> {
+    return invoke<string>('focus_session', { pid, cwd: cwd || null });
   }
 
   async pollSession(projectPath: string, sessionId: string, lastLine: number): Promise<PollResult> {

@@ -47,9 +47,9 @@ export class SessionBrowserComponent implements OnInit {
     }
   }
 
-  async focusSession(pid: number) {
+  async focusSession(active: ActiveSessionInfo) {
     try {
-      await this.bridge.focusSession(pid);
+      await this.bridge.focusSession(active.pid, active.cwd);
     } catch { /* ignore on non-macOS */ }
   }
 

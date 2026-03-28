@@ -109,11 +109,9 @@ pub fn get_active_sessions() -> Result<Vec<ActiveSessionInfo>, String> {
 
 #[cfg(target_os = "macos")]
 #[command]
-pub fn focus_session(pid: u32) -> Result<String, String> {
+pub fn focus_session(pid: u32, cwd: Option<String>) -> Result<String, String> {
     use std::process::Command;
 
-    // Find the parent terminal process (Terminal.app, iTerm2, Warp, etc.)
-    // Walk up the process tree to find the terminal app
     let output = Command::new("ps")
         .args(["-o", "ppid=", "-p", &pid.to_string()])
         .output()
@@ -122,12 +120,11 @@ pub fn focus_session(pid: u32) -> Result<String, String> {
     let ppid_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
     let ppid: u32 = ppid_str.parse().unwrap_or(0);
 
-    // Walk up to find the terminal application
     let mut current_pid = ppid;
     let mut app_name = String::new();
+    let mut is_ide = false;
 
     for _ in 0..10 {
-        // Get the process name
         let name_output = Command::new("ps")
             .args(["-o", "comm=", "-p", &current_pid.to_string()])
             .output()
@@ -135,25 +132,26 @@ pub fn focus_session(pid: u32) -> Result<String, String> {
 
         let name = String::from_utf8_lossy(&name_output.stdout).trim().to_string();
 
-        // Match known terminal apps and IDEs with integrated terminals
-        let known_apps: &[(&str, &str)] = &[
-            ("Terminal", "Terminal"),
-            ("iTerm", "iTerm2"),
-            ("Warp", "Warp"),
-            ("Alacritty", "Alacritty"),
-            ("kitty", "kitty"),
-            ("Hyper", "Hyper"),
-            ("WezTerm", "WezTerm"),
-            ("Code Helper", "Visual Studio Code"),
-            ("Code", "Visual Studio Code"),
-            ("Cursor", "Cursor"),
-            ("Windsurf", "Windsurf"),
-            ("Zed", "Zed"),
+        let known_apps: &[(&str, &str, bool)] = &[
+            ("Terminal", "Terminal", false),
+            ("iTerm", "iTerm2", false),
+            ("Warp", "Warp", false),
+            ("Alacritty", "Alacritty", false),
+            ("kitty", "kitty", false),
+            ("Hyper", "Hyper", false),
+            ("WezTerm", "WezTerm", false),
+            ("Code Helper", "Visual Studio Code", true),
+            ("Code", "Visual Studio Code", true),
+            ("Cursor Helper", "Cursor", true),
+            ("Cursor", "Cursor", true),
+            ("Windsurf", "Windsurf", true),
+            ("Zed", "Zed", true),
         ];
 
-        let matched = known_apps.iter().find(|(pattern, _)| name.contains(pattern));
-        if let Some((_, display_name)) = matched {
+        let matched = known_apps.iter().find(|(pattern, _, _)| name.contains(pattern));
+        if let Some((_, display_name, ide)) = matched {
             app_name = display_name.to_string();
+            is_ide = *ide;
             break;
         }
 
@@ -178,7 +176,50 @@ pub fn focus_session(pid: u32) -> Result<String, String> {
         return Err("Could not find terminal application for this session".to_string());
     }
 
-    // Use AppleScript to activate the terminal app
+    // For IDEs with multiple windows, find the window matching the cwd
+    if is_ide {
+        if let Some(ref cwd) = cwd {
+            // Extract project folder name from cwd for matching
+            let project_name = std::path::Path::new(cwd)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let process_name = if app_name == "Visual Studio Code" { "Code" } else { &app_name };
+
+            // Use System Events to find and raise the correct window
+            let script = format!(
+                r#"
+                tell application "System Events"
+                    tell process "{process_name}"
+                        set windowList to name of every window
+                        repeat with i from 1 to count of windowList
+                            if item i of windowList contains "{project_name}" then
+                                perform action "AXRaise" of window i
+                                set frontmost to true
+                                return "Focused window: " & item i of windowList
+                            end if
+                        end repeat
+                    end tell
+                end tell
+                tell application "{app_name}" to activate
+                "#,
+                process_name = process_name,
+                project_name = project_name,
+                app_name = app_name
+            );
+
+            Command::new("osascript")
+                .args(["-e", &script])
+                .output()
+                .map_err(|e| format!("Failed to focus {}: {}", app_name, e))?;
+
+            return Ok(format!("Focused {} window for {}", app_name, project_name));
+        }
+    }
+
+    // Simple activate for standalone terminals
     let script = format!(
         r#"tell application "{}" to activate"#,
         app_name
@@ -194,7 +235,7 @@ pub fn focus_session(pid: u32) -> Result<String, String> {
 
 #[cfg(not(target_os = "macos"))]
 #[command]
-pub fn focus_session(_pid: u32) -> Result<String, String> {
+pub fn focus_session(_pid: u32, _cwd: Option<String>) -> Result<String, String> {
     Err("Focus session is only supported on macOS".to_string())
 }
 
