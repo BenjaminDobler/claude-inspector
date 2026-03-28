@@ -108,5 +108,12 @@
 // ─── Main content ───
 .app-content {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
+
+  // Ensure routed components fill the space
+  > * {
+    display: block;
+    height: 100%;
+  }
 }
