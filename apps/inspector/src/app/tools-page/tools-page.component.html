@@ -59,6 +59,21 @@
       </div>
     }
   } @else {
-    <div class="loading">Loading tool analytics...</div>
+    <div class="page-header">
+      <h1>Tools</h1>
+      <p class="page-sub"><span class="skeleton skeleton-text" style="width: 250px"></span></p>
+    </div>
+    <div class="summary-row">
+      <div class="summary-card"><span class="skeleton skeleton-value"></span></div>
+      <div class="summary-card"><span class="skeleton skeleton-value"></span></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="skeleton skeleton-text" style="width: 150px"></span></div>
+      <div class="section-body">
+        @for (_ of [1,2,3,4,5]; track $index) {
+          <div class="hbar-row"><span class="skeleton" style="width: 80px; height: 14px"></span><div class="hbar-track"><div class="skeleton" style="height: 14px; width: 60%"></div></div></div>
+        }
+      </div>
+    </div>
   }
 </div>

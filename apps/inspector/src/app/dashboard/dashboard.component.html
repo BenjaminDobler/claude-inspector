@@ -181,6 +181,19 @@
       </div>
     }
   } @else {
-    <div class="loading">Loading dashboard...</div>
+    <!-- Loading skeletons -->
+    <div class="greeting">
+      <h1><span class="skeleton skeleton-text" style="width: 250px"></span></h1>
+      <p class="page-sub"><span class="skeleton skeleton-text" style="width: 350px"></span></p>
+    </div>
+    <div class="summary-row">
+      @for (_ of [1,2,3,4]; track $index) {
+        <div class="summary-card"><span class="skeleton skeleton-value"></span><span class="skeleton skeleton-label"></span></div>
+      }
+    </div>
+    <div class="two-col">
+      <div class="widget"><div class="skeleton skeleton-chart"></div></div>
+      <div class="widget"><div class="skeleton skeleton-chart"></div></div>
+    </div>
   }
 </div>

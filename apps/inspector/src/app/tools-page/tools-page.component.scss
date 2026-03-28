@@ -48,4 +48,13 @@
   font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); width: 50px; text-align: right; flex-shrink: 0;
 }
 
-.loading { padding: 60px; text-align: center; color: var(--text-muted); }
+.skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--bg-raised) 25%, var(--bg-overlay) 50%, var(--bg-raised) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+.skeleton-text { height: 18px; display: inline-block; }
+.skeleton-value { height: 32px; width: 80px; margin: 8px auto; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
