@@ -21,6 +21,7 @@ log = "0.4"
 tauri = { version = "2.10.3", features = [] }
 tauri-plugin-log = "2"
 dirs = "6"
+tauri-plugin-notification = "2.3.3"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

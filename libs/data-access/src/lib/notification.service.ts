@@ -80,25 +80,31 @@ const STORAGE_KEY = 'claude-inspector-notification-rules';
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
   readonly rules = signal<NotificationRule[]>(this.loadRules());
-  readonly notificationPermission = signal<NotificationPermission>('default');
+  readonly notificationPermission = signal<string>('default');
 
-  private audioCache = new Map<string, HTMLAudioElement>();
   private lastActivityTimestamp = 0;
   private idleTimer: ReturnType<typeof setInterval> | null = null;
+  private tauriNotification: typeof import('@tauri-apps/plugin-notification') | null = null;
 
   constructor() {
-    // Check notification permission
-    if ('Notification' in window) {
-      this.notificationPermission.set(Notification.permission);
-    }
+    this.initTauriNotification();
   }
 
-  requestPermission(): void {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then((perm) => {
-        this.notificationPermission.set(perm);
-      });
-    }
+  private async initTauriNotification(): Promise<void> {
+    try {
+      this.tauriNotification = await import('@tauri-apps/plugin-notification');
+      const granted = await this.tauriNotification.isPermissionGranted();
+      this.notificationPermission.set(granted ? 'granted' : 'default');
+    } catch { /* not in Tauri context */ }
+  }
+
+  async requestPermission(): Promise<void> {
+    try {
+      if (this.tauriNotification) {
+        const perm = await this.tauriNotification.requestPermission();
+        this.notificationPermission.set(perm === 'granted' ? 'granted' : 'denied');
+      }
+    } catch { /* ignore */ }
   }
 
   updateRule(ruleId: string, updates: Partial<NotificationRule>): void {
@@ -188,8 +194,8 @@ export class NotificationService {
       this.playSound(rule.soundFile);
     }
 
-    if (rule.systemNotification && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/favicon.ico' });
+    if (rule.systemNotification && this.tauriNotification && this.notificationPermission() === 'granted') {
+      this.tauriNotification.sendNotification({ title, body });
     }
   }
 
