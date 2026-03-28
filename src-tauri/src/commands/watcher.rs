@@ -8,6 +8,24 @@ fn claude_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|h| h.join(".claude"))
 }
 
+#[cfg(unix)]
+fn is_process_running(pid: u32) -> bool {
+    unsafe { libc::kill(pid as i32, 0) == 0 }
+}
+
+#[cfg(windows)]
+fn is_process_running(pid: u32) -> bool {
+    use std::process::Command;
+    Command::new("tasklist")
+        .args(["/FI", &format!("PID eq {}", pid), "/NH"])
+        .output()
+        .map(|o| {
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            stdout.contains(&pid.to_string())
+        })
+        .unwrap_or(false)
+}
+
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveSessionInfo {
@@ -50,7 +68,7 @@ pub fn get_active_sessions() -> Result<Vec<ActiveSessionInfo>, String> {
                 let started_at = val["startedAt"].as_u64().unwrap_or(0);
 
                 // Check if process is running
-                let is_running = unsafe { libc::kill(pid as i32, 0) } == 0;
+                let is_running = is_process_running(pid);
 
                 // Find project path by looking for matching session JSONL
                 let mut project_path = String::new();
