@@ -3,3 +3,4 @@ pub mod data;
 pub mod mcp;
 pub mod sessions;
 pub mod watcher;
+pub mod workspace;

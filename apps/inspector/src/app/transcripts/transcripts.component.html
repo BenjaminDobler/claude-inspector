@@ -1,0 +1,41 @@
+<div class="transcripts-container">
+  <div class="page-header">
+    <h1>Transcripts</h1>
+    <p class="page-sub">Search across all sessions for any prompt, response, or tool call.</p>
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search all sessions... (e.g. 'authentication', 'Bash', 'error')"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      (keydown.enter)="search()"
+    />
+    <button class="search-btn" (click)="search()" [disabled]="loading() || !query()">
+      {{ loading() ? 'Searching...' : 'Search' }}
+    </button>
+  </div>
+
+  @if (results().length > 0) {
+    <div class="results-count">{{ results().length }} results</div>
+    <div class="results-list">
+      @for (result of results(); track result.sessionId + result.timestamp) {
+        <button class="result-card" (click)="openSession(result)">
+          <div class="result-header">
+            <span class="result-type" [style.color]="getTypeColor(result.entryType)">{{ result.entryType }}</span>
+            @if (result.toolName) {
+              <span class="result-tool">{{ result.toolName }}</span>
+            }
+            <span class="result-project">{{ getProjectName(result.projectPath) }}</span>
+            <span class="result-time">{{ formatTimestamp(result.timestamp) }}</span>
+          </div>
+          <div class="result-text">{{ result.text }}</div>
+        </button>
+      }
+    </div>
+  } @else if (searched() && !loading()) {
+    <div class="empty">No results found for "{{ query() }}"</div>
+  }
+</div>

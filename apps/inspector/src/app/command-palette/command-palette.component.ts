@@ -74,11 +74,14 @@ export class CommandPaletteComponent {
   private items: PaletteItem[] = [
     { label: 'Dashboard', description: 'Overview with activity and costs', route: '/dashboard', icon: '◆', category: 'Overview' },
     { label: 'Sessions', description: 'Browse and select sessions', route: '/', icon: '◉', category: 'Monitor' },
-    { label: 'Costs', description: 'Cost tracking and daily breakdown', route: '/costs', icon: '●', category: 'Monitor' },
+    { label: 'Transcripts', description: 'Search across all sessions', route: '/transcripts', icon: '☰', category: 'Monitor' },
     { label: 'Tools', description: 'Cross-session tool analytics', route: '/tools', icon: '⚡', category: 'Monitor' },
-    { label: 'Plugins', description: 'Manage plugins and marketplace', route: '/config', icon: '⚡', category: 'Config' },
+    { label: 'Costs', description: 'Cost tracking and daily breakdown', route: '/costs', icon: '●', category: 'Monitor' },
+    { label: 'CLAUDE.md', description: 'View and edit project context files', route: '/claude-md', icon: '✍', category: 'Workspace' },
+    { label: 'Plugins', description: 'Manage plugins and marketplace', route: '/config', icon: '★', category: 'Config' },
     { label: 'MCP Servers', description: 'Manage MCP server connections', route: '/mcp', icon: '⚙', category: 'Config' },
     { label: 'Notifications', description: 'Sound and alert settings', route: '/settings', icon: '♮', category: 'Config' },
+    { label: 'Hygiene', description: 'Health checks and cleanup suggestions', route: '/hygiene', icon: '⚠', category: 'Health' },
   ];
 
   filteredItems = computed(() => {

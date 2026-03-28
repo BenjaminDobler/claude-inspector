@@ -18,6 +18,9 @@
         <a class="nav-item" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
           <span class="nav-icon">&#9673;</span> Sessions
         </a>
+        <a class="nav-item" routerLink="/transcripts" routerLinkActive="active">
+          <span class="nav-icon">&#9776;</span> Transcripts
+        </a>
         <a class="nav-item" routerLink="/tools" routerLinkActive="active">
           <span class="nav-icon">&#9889;</span> Tools
         </a>
@@ -27,15 +30,29 @@
       </div>
 
       <div class="nav-group">
+        <span class="nav-group-label">Workspace</span>
+        <a class="nav-item" routerLink="/claude-md" routerLinkActive="active">
+          <span class="nav-icon">&#9997;</span> CLAUDE.md
+        </a>
+      </div>
+
+      <div class="nav-group">
         <span class="nav-group-label">Config</span>
         <a class="nav-item" routerLink="/config" routerLinkActive="active">
-          <span class="nav-icon">&#9889;</span> Plugins
+          <span class="nav-icon">&#9733;</span> Plugins
         </a>
         <a class="nav-item" routerLink="/mcp" routerLinkActive="active">
           <span class="nav-icon">&#9881;</span> MCP Servers
         </a>
         <a class="nav-item" routerLink="/settings" routerLinkActive="active">
           <span class="nav-icon">&#9838;</span> Notifications
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <span class="nav-group-label">Health</span>
+        <a class="nav-item" routerLink="/hygiene" routerLinkActive="active">
+          <span class="nav-icon">&#9888;</span> Hygiene
         </a>
       </div>
     </nav>

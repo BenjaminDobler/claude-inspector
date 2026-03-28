@@ -1,0 +1,52 @@
+<div class="editor-container">
+  <div class="page-header">
+    <h1>CLAUDE.md</h1>
+    <p class="page-sub">{{ existingCount }} projects with CLAUDE.md, {{ missingCount }} without.</p>
+  </div>
+
+  <div class="editor-layout">
+    <!-- Project list -->
+    <div class="project-sidebar">
+      @for (project of projects(); track project.projectPath) {
+        <button class="project-item"
+          [class.selected]="selectedProject()?.projectPath === project.projectPath"
+          [class.missing]="!project.exists"
+          (click)="selectProject(project)">
+          <span class="project-status" [class.exists]="project.exists"></span>
+          <span class="project-name">{{ getProjectName(project.displayPath) }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-panel">
+      @if (selectedProject(); as project) {
+        <div class="editor-header">
+          <span class="editor-path">{{ project.displayPath }}/CLAUDE.md</span>
+          <div class="editor-actions">
+            @if (dirty()) {
+              <span class="unsaved-badge">Unsaved changes</span>
+            }
+            @if (success()) {
+              <span class="saved-badge">{{ success() }}</span>
+            }
+            <button class="save-btn" (click)="save()" [disabled]="saving() || !dirty()">
+              {{ saving() ? 'Saving...' : 'Save' }}
+            </button>
+          </div>
+        </div>
+        <textarea
+          class="editor-textarea"
+          [ngModel]="editContent()"
+          (ngModelChange)="onEdit($event)"
+          spellcheck="false"
+          [placeholder]="project.exists ? '' : '# Project Name\n\nDescribe your project here to help Claude understand your codebase.\n\n## Architecture\n\n## Common Commands\n\n## Key Files'"
+        ></textarea>
+      } @else {
+        <div class="editor-empty">
+          <p>Select a project to view or edit its CLAUDE.md</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,46 @@
+<div class="hygiene-container">
+  <div class="page-header">
+    <h1>Hygiene</h1>
+    <p class="page-sub">{{ issues().length }} issues found. {{ warnings().length }} warnings, {{ infos().length }} informational.</p>
+    <button class="refresh-btn" (click)="runChecks()" [disabled]="loading()">
+      {{ loading() ? 'Checking...' : 'Re-check' }}
+    </button>
+  </div>
+
+  @if (!loading()) {
+    @if (issues().length === 0) {
+      <div class="all-good">
+        <span class="all-good-icon">&#10003;</span>
+        <span>Everything looks good!</span>
+      </div>
+    }
+
+    <!-- Warnings first -->
+    @for (issue of warnings(); track issue.title + issue.project) {
+      <div class="issue-card warning">
+        <div class="issue-icon">{{ getCategoryIcon(issue.category) }}</div>
+        <div class="issue-content">
+          <div class="issue-title">{{ issue.title }}</div>
+          <div class="issue-desc">{{ issue.description }}</div>
+          <div class="issue-action">{{ issue.action }}</div>
+        </div>
+        <span class="severity-badge warning">warning</span>
+      </div>
+    }
+
+    <!-- Info items -->
+    @for (issue of infos(); track issue.title + issue.project) {
+      <div class="issue-card info">
+        <div class="issue-icon">{{ getCategoryIcon(issue.category) }}</div>
+        <div class="issue-content">
+          <div class="issue-title">{{ issue.title }}</div>
+          <div class="issue-desc">{{ issue.description }}</div>
+          <div class="issue-action">{{ issue.action }}</div>
+        </div>
+        <span class="severity-badge info">info</span>
+      </div>
+    }
+  } @else {
+    <div class="loading">Running hygiene checks...</div>
+  }
+</div>

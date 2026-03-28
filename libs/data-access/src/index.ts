@@ -16,6 +16,9 @@ export {
   type McpServerInfo,
   type GlobalToolStat,
   type ToolSequence,
+  type TranscriptResult,
+  type ClaudeMdInfo,
+  type HygieneIssue,
 } from './lib/tauri-bridge.service';
 export { SessionStoreService } from './lib/session-store.service';
 export { WatcherService } from './lib/watcher.service';

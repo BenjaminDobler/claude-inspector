@@ -174,6 +174,23 @@ export class TauriBridgeService {
     return invoke<CommandResult>('remove_mcp_server', { name, scope: scope || null });
   }
 
+  // Workspace commands
+  async searchTranscripts(query: string, limit?: number): Promise<TranscriptResult[]> {
+    return invoke<TranscriptResult[]>('search_transcripts', { query, limit: limit || 100 });
+  }
+
+  async listClaudeMdFiles(): Promise<ClaudeMdInfo[]> {
+    return invoke<ClaudeMdInfo[]>('list_claude_md_files');
+  }
+
+  async writeClaudeMd(projectPath: string, content: string): Promise<void> {
+    return invoke('write_claude_md', { projectPath, content });
+  }
+
+  async checkHygiene(): Promise<HygieneIssue[]> {
+    return invoke<HygieneIssue[]>('check_hygiene');
+  }
+
   async addMarketplace(source: string): Promise<CommandResult> {
     return invoke<CommandResult>('add_marketplace', { source });
   }
@@ -247,6 +264,32 @@ export interface HistoryEntry {
 export interface MemoryFile {
   filename: string;
   content: string;
+}
+
+export interface TranscriptResult {
+  projectPath: string;
+  sessionId: string;
+  entryType: string;
+  text: string;
+  timestamp: string;
+  model: string;
+  toolName: string;
+}
+
+export interface ClaudeMdInfo {
+  projectPath: string;
+  displayPath: string;
+  content: string | null;
+  exists: boolean;
+}
+
+export interface HygieneIssue {
+  category: string;
+  severity: string;
+  title: string;
+  description: string;
+  action: string;
+  project: string;
 }
 
 export interface GlobalToolStat {

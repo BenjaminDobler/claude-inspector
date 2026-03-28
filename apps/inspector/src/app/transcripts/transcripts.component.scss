@@ -1,0 +1,62 @@
+.transcripts-container { padding: 28px 32px; }
+
+.page-header { margin-bottom: 20px; h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.03em; } }
+.page-sub { margin: 0; font-size: 14px; color: var(--text-muted); }
+
+.search-bar {
+  display: flex; gap: 8px; margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1; padding: 12px 18px; background: var(--bg-raised); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; font-family: var(--font-ui);
+  box-shadow: var(--shadow-sm);
+  &:focus { border-color: var(--accent-blue); outline: none; box-shadow: var(--glow-blue); }
+  &::placeholder { color: var(--text-faint); }
+}
+
+.search-btn {
+  padding: 12px 24px; background: rgba(88,166,255,0.1); border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md); color: var(--accent-blue); cursor: pointer; font-size: 14px;
+  font-weight: 500; font-family: var(--font-ui); transition: all 0.15s;
+  &:hover:not(:disabled) { background: rgba(88,166,255,0.15); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.results-count { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-weight: 500; }
+
+.results-list { display: flex; flex-direction: column; gap: 6px; }
+
+.result-card {
+  display: block; width: 100%; padding: 14px 18px; background: var(--bg-raised);
+  border: 1px solid var(--border-muted); border-radius: var(--radius-md); cursor: pointer;
+  text-align: left; color: var(--text-primary); box-shadow: var(--shadow-sm); transition: all 0.15s;
+  &:hover { border-color: var(--border-default); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+}
+
+.result-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+
+.result-type {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.result-tool {
+  font-size: 12px; font-family: var(--font-mono); color: var(--accent-yellow); font-weight: 500;
+}
+
+.result-project {
+  font-size: 11px; font-weight: 600; color: var(--accent-blue); font-family: var(--font-mono);
+  padding: 1px 7px; background: rgba(88,166,255,0.08); border-radius: var(--radius-pill);
+  margin-left: auto;
+}
+
+.result-time { font-size: 11px; color: var(--text-faint); font-family: var(--font-mono); }
+
+.result-text {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+
+.empty { padding: 40px; text-align: center; color: var(--text-faint); font-size: 14px; }

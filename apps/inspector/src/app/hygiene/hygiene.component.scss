@@ -1,0 +1,54 @@
+.hygiene-container { padding: 28px 32px; }
+
+.page-header {
+  margin-bottom: 24px; display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+  h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.03em; flex: 1; }
+}
+.page-sub { margin: 0; font-size: 14px; color: var(--text-muted); width: 100%; }
+
+.refresh-btn {
+  padding: 7px 16px; background: rgba(88,166,255,0.08); border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm); color: var(--accent-blue); cursor: pointer; font-size: 13px;
+  font-weight: 500; flex-shrink: 0;
+  &:hover:not(:disabled) { background: rgba(88,166,255,0.15); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.all-good {
+  display: flex; align-items: center; gap: 12px; padding: 24px;
+  background: rgba(63,185,80,0.06); border: 1px solid rgba(63,185,80,0.2);
+  border-radius: var(--radius-md); color: var(--accent-green); font-size: 15px; font-weight: 500;
+}
+
+.all-good-icon { font-size: 20px; }
+
+.issue-card {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px;
+  background: var(--bg-raised); border: 1px solid var(--border-muted); border-radius: var(--radius-md);
+  margin-bottom: 8px; box-shadow: var(--shadow-sm);
+
+  &.warning { border-left: 3px solid var(--accent-yellow); }
+  &.info { border-left: 3px solid var(--text-muted); }
+}
+
+.issue-icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+
+.issue-content { flex: 1; min-width: 0; }
+
+.issue-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+.issue-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+
+.issue-action {
+  font-size: 12px; color: var(--text-faint); font-family: var(--font-mono);
+  padding: 4px 8px; background: var(--bg-overlay); border-radius: var(--radius-sm); display: inline-block;
+}
+
+.severity-badge {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: var(--radius-pill); flex-shrink: 0;
+
+  &.warning { color: var(--accent-yellow); background: rgba(210,153,34,0.1); }
+  &.info { color: var(--text-muted); background: var(--bg-overlay); }
+}
+
+.loading { padding: 60px; text-align: center; color: var(--text-muted); }

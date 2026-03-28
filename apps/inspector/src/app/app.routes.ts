@@ -37,6 +37,27 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'transcripts',
+    loadComponent: () =>
+      import('./transcripts/transcripts.component').then(
+        (m) => m.TranscriptsComponent
+      ),
+  },
+  {
+    path: 'claude-md',
+    loadComponent: () =>
+      import('./claude-md-editor/claude-md-editor.component').then(
+        (m) => m.ClaudeMdEditorComponent
+      ),
+  },
+  {
+    path: 'hygiene',
+    loadComponent: () =>
+      import('./hygiene/hygiene.component').then(
+        (m) => m.HygieneComponent
+      ),
+  },
+  {
     path: 'mcp',
     loadComponent: () =>
       import('./mcp-manager/mcp-manager.component').then(
